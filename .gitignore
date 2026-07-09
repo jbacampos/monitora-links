@@ -1,1 +1,13 @@
+# Configurações locais de IDE
 .theia/
+
+# Arquivos compactados
+*.zip
+
+# Arquivo com dados privados
+secrets.h
+
+# Arquivos temporários do Windows
+Thumbs.db
+Desktop.ini
+

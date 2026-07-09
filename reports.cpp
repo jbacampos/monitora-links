@@ -21,7 +21,7 @@ String buildStatus() {
       const LinkState &link = gState.links[i];
 
       if (link.status == LINK_ONLINE) {
-         msg += cfg.emojiOnline;
+         msg += EmojiOnline;
          msg += " ";
          msg += cfg.nome;
          msg += "  <b>ONLINE</b>\n";
@@ -29,7 +29,7 @@ String buildStatus() {
          msg += String(link.ultimoRSSI);
          msg += " dBm\n";
       } else {
-         msg += cfg.emojiOffline;
+         msg += EmojiOffline;
          msg += " ";
          msg += cfg.nome;
          msg += "  <b>OFFLINE</b>\n";
@@ -209,7 +209,7 @@ String buildSystemSummary() {
    }
 
    uint32_t heap = ESP.getFreeHeap();
-   msg += "\n  Heap livre:   ";
+   msg += "\n  Free heap:    ";
    msg += prettySize(heap);
    String obs;
    if (heap > 35 * 1024)
@@ -231,11 +231,11 @@ String buildSystemSummary() {
 
    msg += "\n\n<b><u>Armazenamento</u></b>";
    msg += "\n<b>LittleFS</b>";
-   msg += "\n  Usado:       ";
+   msg += "\n  Usado:                    ";
    msg += prettySize(info.usedBytes);
-   msg += "\n  Total:          ";
+   msg += "\n  Total:                       ";
    msg += prettySize(info.totalBytes);
-   msg += "\n  Livre:          ";
+   msg += "\n  Livre:                       ";
    msg += prettySize(info.totalBytes - info.usedBytes);
 
    msg += "\n<b>Memória Flash</b>";
@@ -245,9 +245,9 @@ String buildSystemSummary() {
    msg += prettySize(ESP.getFlashChipSize());
    msg += "\n  Sketch:                   ";
    msg += prettySize(ESP.getSketchSize());
-   msg += ("\n  Livre para OTA:   ");
+   msg += ("\n  Livre p/ OTA:        ");
    msg += prettySize(ESP.getFreeSketchSpace());
-   msg += ("\n  Gravações:           ");
+   msg += ("\n  Gravações:            ");
    msg += formatNumber(gState.saveCount).c_str();
    msg += ("\n");
 

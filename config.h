@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <Arduino.h>
+#include "secrets.h"
 
 /*********************************************************************
  * VERSÃO
@@ -74,8 +75,10 @@ enum LedMode : uint8_t { LED_MODE_OFF = 0, LED_MODE_ON, LED_MODE_QUIET };
  * TELEGRAM
  ******************************************************************************/
 
-#define TELEGRAM_BOT_TOKEN "REMOVED_TELEGRAM_TOKEN"
-#define TELEGRAM_CHAT_ID "-5398580561"
+// As duas constantes abaiso são definidos em "secrets.h"
+// #define TELEGRAM_BOT_TOKEN "9999999999:paosdirjgoirejgpseoitjgsopjgbspod"
+// #define TELEGRAM_CHAT_ID "-23546529854"
+
 #define TELEGRAM_HOST "api.telegram.org"
 #define TELEGRAM_PORT 443
 #define MAX_PENDING_NOTIFICATIONS 4

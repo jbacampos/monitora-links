@@ -31,18 +31,18 @@ void setup() {
    DBG("%s", buildStatistics(5).c_str());
 
 
-DBG("\n\n");
-DBG("sizeof(LinkState) = %u\n", sizeof(LinkState));
-DBG("sizeof(Evento) = %u\n", sizeof(Evento));
-DBG("sizeof(PendingNotification) = %u\n", sizeof(PendingNotification));
-DBG("sizeof(NotificationSettings) = %u\n", sizeof(NotificationSettings));
-DBG("sizeof(PersistState) = %u\n", sizeof(PersistState));
+// DBG("\n\n");
+// DBG("sizeof(LinkState) = %u\n", sizeof(LinkState));
+// DBG("sizeof(Evento) = %u\n", sizeof(Evento));
+// DBG("sizeof(PendingNotification) = %u\n", sizeof(PendingNotification));
+// DBG("sizeof(NotificationSettings) = %u\n", sizeof(NotificationSettings));
+// DBG("sizeof(PersistState) = %u\n", sizeof(PersistState));
 
-DBG("sizeof(time_t) = %u\n", sizeof(time_t));
-DBG("sizeof(bool) = %u\n", sizeof(bool));
-DBG("sizeof(LinkStatus) = %u\n", sizeof(LinkStatus));
-DBG("sizeof(NotificationType) = %u\n", sizeof(NotificationType));
-DBG("sizeof(LinkId) = %u\n", sizeof(LinkId));
+// DBG("sizeof(time_t) = %u\n", sizeof(time_t));
+// DBG("sizeof(bool) = %u\n", sizeof(bool));
+// DBG("sizeof(LinkStatus) = %u\n", sizeof(LinkStatus));
+// DBG("sizeof(NotificationType) = %u\n", sizeof(NotificationType));
+// DBG("sizeof(LinkId) = %u\n", sizeof(LinkId));
 
 
    // Somente para apagar todo o histórico:
@@ -69,8 +69,6 @@ void loop() {
       checkNotificationPolicy(); // Verifica se existe um link que caiu durante
                                  // o horário de silêncio e gera a notificação
                                  // quando sair dele
-
-      // checkSummary();
 
       if (hasPendingNotifications())
          sendPendingNotifications();

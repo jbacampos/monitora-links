@@ -20,7 +20,7 @@ static String buildMessage(const PendingNotification &n) {
    String msg;
 
    if (n.tipo == NOTIFY_DOWN) {
-      msg += LINKS[n.link].emojiOffline;
+      msg += EmojiOffline;
       msg += " ";
       msg += LINKS[n.link].nome;
       msg += " OFFLINE\n\n";
@@ -37,7 +37,7 @@ static String buildMessage(const PendingNotification &n) {
       msg += String(n.evento);
 
    } else {
-      msg += LINKS[n.link].emojiOnline;
+      msg += EmojiOnline;
       msg += " ";
       msg += LINKS[n.link].nome;
       msg += " ONLINE\n\n";

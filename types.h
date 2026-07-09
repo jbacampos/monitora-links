@@ -17,10 +17,11 @@
 //
 //=============================================================================
 
-#include "config.h"
-
 #include <Arduino.h>
 #include <time.h>
+
+#include "config.h"
+#include "secrets.h"
 
 //=============================================================================
 // Tipos básicos
@@ -36,26 +37,23 @@ typedef struct {
    const char *nome;
    const char *ssid;
    const char *senha;
-   const char *emojiOnline;
-   const char *emojiOffline;
 } LinkConfig;
 
-// Para alterar os links monitorados,
-// basta modificar NUM_LINKS e o vetor LINKS[] abaixo definidos.
+// Para alterar ou incluir links a serem monitorados:
+// 1) altere o valor de NUM_LINKS
+// 2) aumente ou diminua o array LINKS
+// 3) configure as constantes LINK_x, SSID_x e PASSWORD_x em "secrets.h"
 
-#if EM_POA
 constexpr uint8_t NUM_LINKS = 3;
 constexpr LinkConfig LINKS[NUM_LINKS] = {
-    {"REDE MESH", "AP_903", "OliverHuno2016!", "🟢", "🔴"},
-    {"LINK CLARO", "Bavi_NET_2G", "COliverHuno2016", "🟢", "🔴"},
-    {"LINK VIVO", "Bavi_Vivo_2G", "VOliverHuno2016", "🟢", "🔴"},
+    {LINK_1, SSID_1, PASSWORD_1},
+    {LINK_2, SSID_2, PASSWORD_2},
+    {LINK_3, SSID_3, PASSWORD_3},
 };
-#else
-constexpr uint8_t NUM_LINKS = 2;
-constexpr LinkConfig LINKS[NUM_LINKS] = {
-    {"SÍTIO", "Sitio", "OliverHuno2016!", "🟩", "🟥"},
-    {"IoT", "DispIoT", "IOkorma098", "🟢", "🔴"}};
-#endif
+
+#define EmojiOnline  "🟢"
+#define EmojiOffline "🔴"
+
 
 //=============================================================================
 // Enumerações
