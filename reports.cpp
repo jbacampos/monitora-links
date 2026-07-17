@@ -226,21 +226,27 @@ String buildSystemSummary() {
       obs = " (crítico)";
    msg += obs;
 
+#ifdef ESP8266
    FSInfo info;
    LittleFS.info(info);
+   uint32_t total = info.totalBytes;
+   uint32_t used  = info.usedBytes;
+#elif defined(ESP32)
+   uint32_t total = LittleFS.totalBytes();
+   uint32_t used  = LittleFS.usedBytes();
+#endif
+
 
    msg += "\n\n<b><u>Armazenamento</u></b>";
    msg += "\n<b>LittleFS</b>";
    msg += "\n  Usado:                    ";
-   msg += prettySize(info.usedBytes);
+   msg += prettySize(used);
    msg += "\n  Total:                       ";
-   msg += prettySize(info.totalBytes);
+   msg += prettySize(total);
    msg += "\n  Livre:                       ";
-   msg += prettySize(info.totalBytes - info.usedBytes);
+   msg += prettySize(total - used);
 
    msg += "\n<b>Memória Flash</b>";
-   msg += "\n  Física:                      ";
-   msg += prettySize(ESP.getFlashChipRealSize());
    msg += "\n  Configurada:        ";
    msg += prettySize(ESP.getFlashChipSize());
    msg += "\n  Sketch:                   ";

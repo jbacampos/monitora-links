@@ -1,12 +1,11 @@
 #include "monitor.h"
 #include "config.h"
 #include "events.h"
-#include "network.h"
+#include "wifi_manager.h"
 #include "ntp.h"
 #include "types.h"
 
-void processLink(LinkState *state, LinkId link, LinkStatus current,
-                 int16_t rssi) {
+void processLink(LinkState *state, LinkId link, LinkStatus current, int16_t rssi) {
 
    DBG("Status : %s -> %s", linkStatusName(state->status),
        linkStatusName(current));

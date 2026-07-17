@@ -1,9 +1,9 @@
-#include <ESP8266WiFi.h>
 
 #include "config.h"
 #include "led.h"
-#include "network.h"
+#include "wifi_manager.h"
 #include "ntp.h"
+#include "platform.h"
 
 //=============================================================================
 // Auxiliares
@@ -31,7 +31,12 @@ DBG("Início do connectWifi: %lu ms\n", millis() - t0);
 
    WiFi.mode(WIFI_STA);
    WiFi.setAutoReconnect(false);
+
+#ifdef ESP8266
    WiFi.setSleepMode(WIFI_NONE_SLEEP);
+#elif defined(ESP32)
+   WiFi.setSleep(false);
+#endif
 
 DBG("Após WiFi.mode: %lu ms\n", millis() - t0);
 
@@ -43,22 +48,10 @@ DBG("Após WiFi.begin: %lu ms\n", millis() - t0);
    uint8_t cont = 0;
 
 
-wl_status_t last = WL_NO_SHIELD;
-
-
    while (WiFi.status() != WL_CONNECTED) {
 cont++;
       ledsUpdate();
-
-wl_status_t s = WiFi.status();
-if (s != last) {
-   DBG("status = %d\n", s);
-   last = s;
-}
-
-
       delay(200);
-
       if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
          DBG("Timeout\n");
          return false;

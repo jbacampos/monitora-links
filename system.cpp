@@ -1,10 +1,9 @@
 #include "system.h"
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <user_interface.h>
 
 #include "config.h"
+#include "platform.h"
 #include "storage.h"
 #include "types.h"
 
@@ -14,7 +13,11 @@
 
 void initSystem() {
    WiFi.persistent(false);
+
+#ifdef ESP8266
    WiFi.setAutoConnect(false);
+#endif
+
    WiFi.setAutoReconnect(false);
 
    if (!initFS()) {
@@ -53,26 +56,50 @@ void initSystem() {
 //=============================================================================
 
 BootReason getBootReason() {
-   rst_info *rst = ESP.getResetInfoPtr();
 
-   switch (rst->reason) {
-   case REASON_DEFAULT_RST:
-      return BOOT_POWERON;
-
-   case REASON_EXT_SYS_RST:
-      return BOOT_EXTERNAL;
-
-   case REASON_WDT_RST:
-   case REASON_SOFT_WDT_RST:
-      return BOOT_WATCHDOG;
-
-   case REASON_DEEP_SLEEP_AWAKE:
-      return BOOT_DEEPSLEEP;
-
-   default:
-      return BOOT_UNKNOWN;
+#ifdef ESP8266
+   rst_info *info = ESP.getResetInfoPtr();
+   switch (info->reason) {
+      case REASON_DEFAULT_RST:
+         return BOOT_POWERON;
+      case REASON_DEEP_SLEEP_AWAKE:
+         return BOOT_DEEPSLEEP;
+      case REASON_WDT_RST:
+      case REASON_SOFT_WDT_RST:
+         return BOOT_WATCHDOG;
+      case REASON_SOFT_RESTART:
+         return BOOT_SOFTWARE;
+      default:
+         return BOOT_UNKNOWN;
    }
+
+#elif defined(ESP32)
+   #include <esp_system.h>
+   switch (esp_reset_reason()) {
+      case ESP_RST_POWERON:
+         return BOOT_POWERON;
+      case ESP_RST_DEEPSLEEP:
+         return BOOT_DEEPSLEEP;
+      case ESP_RST_TASK_WDT:
+      case ESP_RST_INT_WDT:
+      case ESP_RST_WDT:
+         return BOOT_WATCHDOG;
+      case ESP_RST_SW:
+         return BOOT_SOFTWARE;
+      default:
+         return BOOT_UNKNOWN;
+   }
+
+#else
+
+   return BOOT_UNKNOWN;
+
+#endif#endif
+
 }
+
+
+
 
 //=============================================================================
 // Energia

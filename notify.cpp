@@ -1,9 +1,8 @@
 #include "notify.h"
 
-#include <ESP8266WiFi.h>
-
 #include "config.h"
 #include "ntp.h"
+#include "platform.h"
 #include "storage.h"
 #include "telegram.h"
 

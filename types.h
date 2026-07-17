@@ -44,12 +44,23 @@ typedef struct {
 // 2) aumente ou diminua o array LINKS
 // 3) configure as constantes LINK_x, SSID_x e PASSWORD_x em "secrets.h"
 
+#if EM_POA
 constexpr uint8_t NUM_LINKS = 3;
 constexpr LinkConfig LINKS[NUM_LINKS] = {
     {LINK_1, SSID_1, PASSWORD_1},
     {LINK_2, SSID_2, PASSWORD_2},
     {LINK_3, SSID_3, PASSWORD_3},
 };
+
+#else
+
+constexpr uint8_t NUM_LINKS = 2;
+constexpr LinkConfig LINKS[NUM_LINKS] = {
+    {LINK_1, SSID_1, PASSWORD_1},
+    {LINK_2, SSID_2, PASSWORD_2},
+};
+
+#endif
 
 #define EmojiOnline  "🟢"
 #define EmojiOffline "🔴"
@@ -70,6 +81,7 @@ typedef enum : uint8_t {
    BOOT_DEEPSLEEP,
    BOOT_EXTERNAL,
    BOOT_WATCHDOG,
+   BOOT_SOFTWARE,
    BOOT_UNKNOWN
 } BootReason;
 

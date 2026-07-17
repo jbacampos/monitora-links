@@ -1,13 +1,12 @@
 #include "telegram.h"
 
 #include <Arduino.h>
-#include <ESP8266HTTPClient.h>
-#include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 
 #include "config.h"
-#include "network.h"
+#include "wifi_manager.h"
 #include "notify.h"
+#include "platform.h"
 #include "reports.h"
 #include "storage.h"
 

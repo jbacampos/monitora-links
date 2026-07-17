@@ -3,7 +3,7 @@
 #include "events.h"
 #include "led.h"
 #include "monitor.h"
-#include "network.h"
+#include "wifi_manager.h"
 #include "notify.h"
 #include "ntp.h"
 #include "reports.h"

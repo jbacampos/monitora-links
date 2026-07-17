@@ -1,11 +1,11 @@
-#include <ESP8266WiFi.h>
 
 #include "config.h"
 #include "eventlog.h"
 #include "events.h"
-#include "network.h"
+#include "wifi_manager.h"
 #include "notify.h"
 #include "ntp.h"
+#include "platform.h"
 #include "storage.h"
 #include "types.h"
 
