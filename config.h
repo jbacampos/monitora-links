@@ -19,7 +19,6 @@
  *********************************************************************/
 
 #define DEV_MODE true
-#define EM_POA false
 #define ENABLE_SLEEP false 
       // Não usado por ora. Serve apenas para economizar energia, caso aalimentação seja por bateria
 

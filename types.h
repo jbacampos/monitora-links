@@ -45,6 +45,7 @@ typedef struct {
 // 3) configure as constantes LINK_x, SSID_x e PASSWORD_x em "secrets.h"
 
 #if EM_POA
+
 constexpr uint8_t NUM_LINKS = 3;
 constexpr LinkConfig LINKS[NUM_LINKS] = {
     {LINK_1, SSID_1, PASSWORD_1},
