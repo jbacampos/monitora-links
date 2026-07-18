@@ -1,5 +1,7 @@
 # Configurações locais de IDE
 .theia/
+.pio/
+.vscode/
 
 # Arquivos compactados
 *.zip
