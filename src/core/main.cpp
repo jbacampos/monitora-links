@@ -30,20 +30,18 @@ void setup() {
    DBG("%s", buildLog(10).c_str());
    DBG("%s", buildStatistics(5).c_str());
 
+   // DBG("\n\n");
+   // DBG("sizeof(LinkState) = %u\n", sizeof(LinkState));
+   // DBG("sizeof(Evento) = %u\n", sizeof(Evento));
+   // DBG("sizeof(PendingNotification) = %u\n", sizeof(PendingNotification));
+   // DBG("sizeof(NotificationSettings) = %u\n", sizeof(NotificationSettings));
+   // DBG("sizeof(PersistState) = %u\n", sizeof(PersistState));
 
-// DBG("\n\n");
-// DBG("sizeof(LinkState) = %u\n", sizeof(LinkState));
-// DBG("sizeof(Evento) = %u\n", sizeof(Evento));
-// DBG("sizeof(PendingNotification) = %u\n", sizeof(PendingNotification));
-// DBG("sizeof(NotificationSettings) = %u\n", sizeof(NotificationSettings));
-// DBG("sizeof(PersistState) = %u\n", sizeof(PersistState));
-
-// DBG("sizeof(time_t) = %u\n", sizeof(time_t));
-// DBG("sizeof(bool) = %u\n", sizeof(bool));
-// DBG("sizeof(LinkStatus) = %u\n", sizeof(LinkStatus));
-// DBG("sizeof(NotificationType) = %u\n", sizeof(NotificationType));
-// DBG("sizeof(LinkId) = %u\n", sizeof(LinkId));
-
+   // DBG("sizeof(time_t) = %u\n", sizeof(time_t));
+   // DBG("sizeof(bool) = %u\n", sizeof(bool));
+   // DBG("sizeof(LinkStatus) = %u\n", sizeof(LinkStatus));
+   // DBG("sizeof(NotificationType) = %u\n", sizeof(NotificationType));
+   // DBG("sizeof(LinkId) = %u\n", sizeof(LinkId));
 
    // Somente para apagar todo o histórico:
    // resetState();
@@ -61,8 +59,7 @@ void loop() {
       ledsUpdate();
       DBG("\n=== %s ===\n", LINKS[i].nome);
 
-      uint8_t retries =
-          (gState.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
+      uint8_t retries = (gState.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
       status[i] = testConnection(LINKS[i].ssid, LINKS[i].senha, &rssi, retries);
 
       processLink(&gState.links[i], i, status[i], rssi);
@@ -86,7 +83,7 @@ void loop() {
             DBG("getUpdates: %lu ms\n", millis() - t0);
             DBG("update recebido = %u\n", upd.updateId);
 
-            t0= millis();
+            t0 = millis();
 
             gState.telegramUpdateId = upd.updateId;
             saveState(&gState);
@@ -98,11 +95,11 @@ void loop() {
             }
             if (upd.text.isEmpty())
                continue;
-            t0= millis();
+            t0 = millis();
 
             String resposta = telegramProcessCommand(upd.text);
             DBG("processCommand: %lu ms\n", millis() - t0);
-            t0= millis();
+            t0 = millis();
             if (!resposta.isEmpty())
                telegramSendMessage(resposta);
             break;
@@ -131,8 +128,7 @@ void loop() {
    gState.cicloCount++;
    saveState(&gState);
 
-   ledsEndCycle(ledStatus);
-
+   ledEndCycle(ledStatus);
 
    // Mantém o LED exibindo o estado consolidado do sistema
    // por alguns segundos antes de iniciar um novo ciclo.

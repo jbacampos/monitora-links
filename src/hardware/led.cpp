@@ -138,7 +138,7 @@ void ledsBeginCycle() {
    setColor(LED_BLUE);
 }
 
-void ledsEndCycle(LedStatus status) {
+void ledEndCycle(LedStatus status) {
 
    gStatus = status;
    gMode = LED_IDLE;

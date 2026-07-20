@@ -27,7 +27,7 @@ void ledsInit();
 
 void ledsBeginCycle();
 
-void ledsEndCycle(LedStatus status);
+void ledEndCycle(LedStatus status);
 
 void ledsUpdate();
 
