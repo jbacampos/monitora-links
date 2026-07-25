@@ -11,6 +11,8 @@
 // Inicialização
 //=============================================================================
 
+uint32_t gCycleCount = 0;
+
 void initSystem() {
    WiFi.persistent(false);
 
@@ -22,33 +24,41 @@ void initSystem() {
 
    if (!initFS()) {
       DBG("ERRO LITTLEFS\n");
-
       while (true)
          delay(1000);
    }
 
-   if (!loadState(&gState)) {
-      createDefaultState();
+   if (!loadStorage(FILE_CONFIG, gConfig, CONFIG_MAGIC, CONFIG_VERSION)) {
+      createDefaultConfig();
    }
+
+   if (!loadStorage(FILE_RUNTIME, gRuntime, RUNTIME_MAGIC, RUNTIME_VERSION)) {
+      createDefaultRuntime();
+   }
+
+   if (!loadStorage(FILE_EVENTS, gEvents, EVENTS_MAGIC, EVENTS_VERSION)) {
+      createDefaultEvents();
+   }
+
 
    BootReason br = getBootReason();
 
    switch (br) {
    case BOOT_DEEPSLEEP:
-      gState.cicloCount++;
+      gCycleCount++;
       break;
 
    case BOOT_WATCHDOG:
-      gState.bootCount++;
-      gState.watchdogCount++;
+      gRuntime.bootCount++;
+      gRuntime.watchdogCount++;
       break;
 
    default:
-      gState.bootCount++;
+      gRuntime.bootCount++;
       break;
    }
 
-   saveState(&gState);
+   saveStorage(FILE_RUNTIME, gRuntime);
 }
 
 //=============================================================================

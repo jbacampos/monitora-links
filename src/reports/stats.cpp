@@ -18,7 +18,7 @@ uint32_t getDowntime(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Evento *ev = getEvent(i);
+      const Event *ev = getEvent(i);
       if (ev->link != link)
          continue;
       if (ev->fim < limite)
@@ -39,7 +39,7 @@ uint16_t getFailureCount(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Evento *ev = getEvent(i);
+      const Event *ev = getEvent(i);
       if (ev->link != link)
          continue;
       if (ev->fim < limite)
@@ -61,7 +61,7 @@ uint32_t getLongestFailure(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Evento *ev = getEvent(i);
+      const Event *ev = getEvent(i);
       if (ev->link != link)
          continue;
       if (ev->inicio == 0)
@@ -86,7 +86,7 @@ uint32_t getAverageFailure(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Evento *ev = getEvent(i);
+      const Event *ev = getEvent(i);
       if (ev->link != link)
          continue;
       if (ev->inicio == 0)

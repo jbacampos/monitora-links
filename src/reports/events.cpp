@@ -16,7 +16,8 @@
 void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo,
                 int16_t rssi) {
 
-   state->eventoAtual = gState.proximoEvento++;
+   gEvents.lastEventId++;
+   state->eventoAtual = gEvents.lastEventId;
    if (clockIsValid())
       state->inicioFalha = now();
    else
@@ -32,7 +33,6 @@ void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo,
       state->downNotificationSent = false;
    } else {
       PendingNotification n = {};
-      n.pending = true;
       n.link = link;
       n.tipo = NOTIFY_DOWN;
       n.motivo = motivo;
@@ -80,7 +80,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
       queueNotification(n);
    }
 
-   Evento ev = {};
+   Event ev = {};
    ev.id = state->eventoAtual;
    ev.link = link;
    ev.motivo = state->status;

@@ -6,7 +6,9 @@
 // Estado global
 //=============================================================================
 
-PersistState gState;
+ConfigData gConfig;
+RuntimeData gRuntime;
+EventsData gEvents;
 
 //=============================================================================
 // Sistema de arquivos
@@ -15,9 +17,9 @@ PersistState gState;
 bool initFS() {
 
 #ifdef ESP8266
-    return LittleFS.begin();
+   return LittleFS.begin();
 #elif defined(ESP32)
-    return LittleFS.begin(true);
+   return LittleFS.begin(true);
 #endif
 }
 
@@ -25,7 +27,7 @@ bool initFS() {
 // Persistência
 //=============================================================================
 
-bool loadState(PersistState *st) {
+bool loadState(PersistState* st) {
    File f = LittleFS.open(FILE_STATE, "r");
 
    if (!f) {
@@ -42,8 +44,8 @@ bool loadState(PersistState *st) {
       return false;
    }
 
-   size_t lidos = f.read((uint8_t *)st, sizeof(PersistState));
-   
+   size_t lidos = f.read((uint8_t*)st, sizeof(PersistState));
+
    f.close();
 
    if (lidos != sizeof(PersistState)) {
@@ -70,62 +72,52 @@ bool loadState(PersistState *st) {
    return true;
 }
 
-bool saveState(PersistState *st) {
-   File f = LittleFS.open(FILE_STATE, "w");
-
-   if (!f) {
-      DBG("Não foi possível gravar /state.bin\n");
-      return false;
-   }
-
-   size_t gravados = f.write((uint8_t *)st, sizeof(PersistState));
-
-   f.close();
-
-   if (gravados != sizeof(PersistState)) {
-      DBG("Bytes gravados não batem com o tamanho de PersistState\n");
-      DBG("Gravados : %u\n", gravados);
-      DBG("PersistState: %u\n", sizeof(PersistState));
-      return false;
-   }
-
-   gState.saveCount++;
-   return true;
-}
 
 //=============================================================================
 // Administração
 //=============================================================================
 
-// Inicializa um novo estado persistente e grava state.bin.
-void createDefaultState() {
-   memset(&gState, 0, sizeof(gState));
-
-   gState.magic = MAGIC_NUMBER;
-   gState.version = STATE_VERSION;
-
-   gState.proximoEvento = 1;
-
-   for (uint8_t i = 0; i < NUM_LINKS; i++) {
-      gState.links[i].status = LINK_ONLINE;
-   }
-
-   gState.notification.enabled = NOTIFICATIONS_ENABLED_DEFAULT;
-   gState.notification.quietEnabled = QUIET_HOURS_ENABLED_DEFAULT;
-   gState.notification.quietStart = QUIET_HOURS_START_DEFAULT;
-   gState.notification.quietEnd = QUIET_HOURS_END_DEFAULT;
-   // gState.notification.summaryEnabled = SUMMARY_ENABLED_DEFAULT;
-   // gState.notification.summaryTime    = SUMMARY_TIME_DEFAULT;
-   // gState.notification.summaryDay     = 0xFFFF;
-   gState.notification.ledMode = LED_MODE_DEFAULT;
-
-   DBG("Criando novo state.bin\n");
-   DBG("gState.version: %u\n", gState.version);
-
-   saveState(&gState);
-}
-
 void resetState() {
    LittleFS.remove(FILE_STATE);
    createDefaultState();
+}
+
+void createDefaultConfig()
+{
+   memset(&gConfig, 0, sizeof(gConfig));
+
+   gConfig.header.magic = CONFIG_MAGIC;
+   gConfig.header.version = CONFIG_VERSION;
+
+   gConfig.notification.enabled = NOTIFICATIONS_ENABLED_DEFAULT;
+   gConfig.notification.quietEnabled = QUIET_HOURS_ENABLED_DEFAULT;
+   gConfig.notification.quietStart = QUIET_HOURS_START_DEFAULT;
+   gConfig.notification.quietEnd = QUIET_HOURS_END_DEFAULT;
+   gConfig.notification.ledMode = LED_MODE_DEFAULT;
+
+   saveStorage(FILE_CONFIG, gConfig);
+}
+
+void createDefaultRuntime() {
+   memset(&gRuntime, 0, sizeof(gRuntime));
+
+   gRuntime.header.magic = RUNTIME_MAGIC;
+   gRuntime.header.version = RUNTIME_VERSION;
+
+   for (uint8_t i = 0; i < NUM_LINKS; i++) {
+      gRuntime.links[i].status = LINK_UNKNOWN;
+   }
+
+   saveStorage(FILE_RUNTIME, gRuntime);
+}
+
+void createDefaultEvents() {
+   memset(&gEvents, 0, sizeof(gEvents));
+
+   gEvents.header.magic = EVENTS_MAGIC;
+   gEvents.header.version = EVENTS_VERSION;
+
+   gEvents.lastEventId = 1;
+
+   saveStorage(FILE_EVENTS, gEvents);
 }

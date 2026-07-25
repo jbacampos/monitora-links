@@ -73,10 +73,9 @@ static String buildMessage(const PendingNotification &n) {
 
 void queueNotification(const PendingNotification &n) {
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      if (!gState.pendingNotifications[i].pending) {
-         gState.pendingNotifications[i] = n;
-         gState.pendingNotifications[i].pending = true;
-         saveState(&gState);
+      if (!gRuntime.pendingNotifications[i].pending) {
+         gRuntime.pendingNotifications[i] = n;
+         gRuntime.pendingNotifications[i].pending = true;
          return;
       }
    }
@@ -91,7 +90,7 @@ void queueNotification(const PendingNotification &n) {
 bool hasPendingNotifications() {
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      if (gState.pendingNotifications[i].pending)
+      if (gRuntime.pendingNotifications[i].pending)
          return true;
    }
 
@@ -102,7 +101,7 @@ uint8_t getPendingNotificationCount() {
 
    uint8_t totPends = 0;
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      if (gState.pendingNotifications[i].pending)
+      if (gRuntime.pendingNotifications[i].pending)
          totPends++;
    }
 
@@ -117,21 +116,21 @@ void clearPendingNotifications() {
    bool mudou = false;
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      if (gState.pendingNotifications[i].pending) {
-         gState.pendingNotifications[i].pending = false;
+      if (gRuntime.pendingNotifications[i].pending) {
+         gRuntime.pendingNotifications[i].pending = false;
          mudou = true;
       }
    }
 
    if (mudou)
-      saveState(&gState);
+      saveStorage(FILE_RUNTIME, &gRuntime);
 }
 
 void sendPendingNotifications() {
    if (WiFi.status() != WL_CONNECTED)
       return;
 
-   if (!gState.notification.enabled) {
+   if (!gConfig.notification.enabled) {
       clearPendingNotifications();
       return;
    }
@@ -139,7 +138,7 @@ void sendPendingNotifications() {
       return;
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      PendingNotification &n = gState.pendingNotifications[i];
+      PendingNotification &n = gRuntime.pendingNotifications[i];
 
       if (!n.pending)
          continue;
@@ -148,10 +147,10 @@ void sendPendingNotifications() {
 
       if (telegramSendMessage(msg)) {
          n.pending = false;
-         saveState(&gState);
+         saveStorage(FILE_RUNTIME, &gRuntime);
       } else {
          DBG("Falha ao enviar notificacao #%u\n",
-             gState.pendingNotifications[i].evento);
+             gRuntime.pendingNotifications[i].evento);
          break;
       }
    }
@@ -170,11 +169,13 @@ static uint16_t minutesOfDay(time_t t) {
    return tm.tm_hour * 60 + tm.tm_min;
 }
 
-bool quietHoursEnabled() { return gState.notification.quietEnabled; }
+bool quietHoursEnabled() { 
+   return gConfig.notification.quietEnabled; 
+}
 
 bool inQuietHours(time_t t) {
 
-   if (!gState.notification.quietEnabled)
+   if (!gConfig.notification.quietEnabled)
       return false;
 
    if (t == 0) {
@@ -185,8 +186,8 @@ bool inQuietHours(time_t t) {
 
    uint16_t min = minutesOfDay(t);
 
-   uint16_t ini = gState.notification.quietStart;
-   uint16_t fim = gState.notification.quietEnd;
+   uint16_t ini = gConfig.notification.quietStart;
+   uint16_t fim = gConfig.notification.quietEnd;
 
    if (ini < fim)
       return (min >= ini && min < fim);
@@ -195,6 +196,8 @@ bool inQuietHours(time_t t) {
 }
 
 void checkNotificationPolicy() {
+
+   bool modificou = false;
 
    if (!clockIsValid())
       return;
@@ -208,16 +211,14 @@ void checkNotificationPolicy() {
    wasInQuietHours = quietNow;
 
    // Entrou no horário de silêncio.
-   if (quietNow) {
-      saveState(&gState);
+   if (quietNow)
       return;
-   }
 
    // Acabou de sair do horário de silêncio.
 
    for (uint8_t i = 0; i < NUM_LINKS; i++) {
 
-      LinkState *ls = &gState.links[i];
+      LinkState *ls = &gRuntime.links[i];
 
       if (ls->status == LINK_ONLINE)
          continue;
@@ -234,7 +235,6 @@ void checkNotificationPolicy() {
 
       PendingNotification n = {};
 
-      n.pending = true;
       n.link = i;
       n.tipo = NOTIFY_DOWN;
       n.motivo = ls->status;
@@ -243,9 +243,11 @@ void checkNotificationPolicy() {
       n.rssi = ls->ultimoRSSI;
 
       queueNotification(n);
-
+      modificou = true;
       ls->downNotificationSent = true;
    }
 
-   saveState(&gState);
+   if (modificou)
+      saveStorage(FILE_RUNTIME, &gRuntime);
+   
 }

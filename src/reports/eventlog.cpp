@@ -7,34 +7,34 @@
 // Consulta ao histórico
 //=============================================================================
 
-uint16_t getEventCount() { return gState.numeroEventos; }
+uint16_t getEventCount() { return gEvents.eventCounter; }
 
-const Evento *getEvent(uint16_t index) {
-   if (index >= gState.numeroEventos)
+const Event *getEvent(uint16_t index) {
+   if (index >= gEvents.eventCounter)
       return nullptr;
 
-   uint16_t pos = (gState.primeiroEvento + index) % MAX_EVENTS;
+   uint16_t pos = (gEvents.firstEventId + index) % MAX_EVENTS;
 
-   return &gState.eventos[pos];
+   return &gEvents.events[pos];
 }
 
 //=============================================================================
 // Gravação
 //=============================================================================
 
-void appendEvent(const Evento &evento) {
-   uint16_t pos = (gState.primeiroEvento + gState.numeroEventos) % MAX_EVENTS;
+void appendEvent(const Event &evento) {
+   uint16_t pos = (gEvents.firstEventId + gEvents.eventCounter) % MAX_EVENTS;
 
-   gState.eventos[pos] = evento;
-
-   if (gState.numeroEventos < MAX_EVENTS) {
-      gState.numeroEventos++;
+   gEvents.events[pos] = evento;
+   
+   if (gEvents.eventCounter < MAX_EVENTS) {
+      gEvents.eventCounter++;
    } else {
-      gState.primeiroEvento = (gState.primeiroEvento + 1) % MAX_EVENTS;
+      gEvents.firstEventId = (gEvents.firstEventId + 1) % MAX_EVENTS;
    }
 
-   if (saveState(&gState)) {
-      DBG("Evento gravado. Total: %u\n", gState.numeroEventos);
+   if (saveStorage(FILE_EVENTS, &gEvents)) {
+      DBG("Evento gravado. Total: %u\n", gEvents.eventCounter);
    } else {
       DBG("ERRO gravando historico de eventos.\n");
    }

@@ -83,7 +83,7 @@ static void showStatus() {
 
 bool ledsEnabled() {
 
-   switch (gState.notification.ledMode) {
+   switch (gConfig.notification.ledMode) {
 
    case LED_MODE_OFF:
       return false;

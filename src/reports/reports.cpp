@@ -18,7 +18,7 @@ String buildStatus() {
 
    for (uint8_t i = 0; i < NUM_LINKS; i++) {
       const LinkConfig &cfg = LINKS[i];
-      const LinkState &link = gState.links[i];
+      const LinkState &link = gRuntime.links[i];
 
       if (link.status == LINK_ONLINE) {
          msg += EmojiOnline;
@@ -71,7 +71,7 @@ String buildLog(uint16_t maxEventos) {
    uint16_t inicio = (total > maxEventos) ? total - maxEventos : 0;
 
    for (uint16_t i = inicio; i < total; i++) {
-      const Evento &ev = *getEvent(i);
+      const Event &ev = *getEvent(i);
       const LinkConfig &cfg = LINKS[ev.link];
 
       msg += "\n#";
@@ -109,20 +109,20 @@ String buildLog(uint16_t maxEventos) {
 
 String buildInfoNotif() {
    String msg = "\nEnvio de notificações:\n";
-   msg += (gState.notification.enabled) ? "ATIVO" : "INATIVO";
+   msg += (gConfig.notification.enabled) ? "ATIVO" : "INATIVO";
    msg += "\nPeríodo quieto (PQ):\n";
-   msg += (gState.notification.quietEnabled) ? "ATIVO - " : "INATIVO - ";
-   msg += formatTime(gState.notification.quietStart);
+   msg += (gConfig.notification.quietEnabled) ? "ATIVO - " : "INATIVO - ";
+   msg += formatTime(gConfig.notification.quietStart);
    msg += " - ";
-   msg += formatTime(gState.notification.quietEnd);
+   msg += formatTime(gConfig.notification.quietEnd);
    return msg;
 }
 
 String buildInfoLed() {
    String msg = "\nLed:\n";
-   if (gState.notification.ledMode == LED_MODE_OFF)
+   if (gConfig.notification.ledMode == LED_MODE_OFF)
       msg += "⚪ INATIVO sempre";
-   else if (gState.notification.ledMode == LED_MODE_ON)
+   else if (gConfig.notification.ledMode == LED_MODE_ON)
       msg += "🔵 ATIVO sempre";
    else
       msg += "⚪🔵 INATIVO no PQ; ATIVO fora";
@@ -195,10 +195,10 @@ String buildSystemSummary() {
    msg += getHardwareName();
 
    msg += "\n  Boots:           ";
-   msg += formatNumber(gState.bootCount).c_str();
+   msg += formatNumber(gRuntime.bootCount).c_str();
 
    msg += "\n  Ciclos:           ";
-   msg += formatNumber(gState.cicloCount).c_str();
+   msg += formatNumber(gCycleCount).c_str();
 
    msg += "\n  Horário:        ";
    time_t agora = time(nullptr);
@@ -254,7 +254,7 @@ String buildSystemSummary() {
    msg += ("\n  Livre p/ OTA:        ");
    msg += prettySize(ESP.getFreeSketchSpace());
    msg += ("\n  Gravações:            ");
-   msg += formatNumber(gState.saveCount).c_str();
+   msg += formatNumber(gRuntime.saveCount).c_str();
    msg += ("\n");
 
    return msg;

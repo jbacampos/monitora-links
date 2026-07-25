@@ -133,13 +133,13 @@ String cmdNotify(const String &args) {
       msg = buildInfoNotif();
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
-      gState.notification.enabled = true;
-      saveState(&gState);
+      gConfig.notification.enabled = true;
+      saveStorage(FILE_CONFIG, &gConfig);
       msg = "\n🔔 Notificações ATIVADAS";
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
-      gState.notification.enabled = false;
-      saveState(&gState);
+      gConfig.notification.enabled = false;
+      saveStorage(FILE_CONFIG, &gConfig);
       msg = "\n🔕 Notificações DESATIVADAS";
 
    } else {
@@ -160,23 +160,21 @@ String cmdQuiet(const String &args) {
 
    if (totArgs == 0) {
       msg += "\nPeríodo quieto:\n";
-      msg += (gState.notification.quietEnabled) ? "ATIVO - " : "INATIVO - ";
-      msg += formatTime(gState.notification.quietStart);
+      msg += (gConfig.notification.quietEnabled) ? "ATIVO - " : "INATIVO - ";
+      msg += formatTime(gConfig.notification.quietStart);
       msg += " - ";
-      msg += formatTime(gState.notification.quietEnd);
-      // msg += "\n\nResumo do período quieto:\n";
-      // msg += (gState.notification.summaryEnabled) ? "ATIVO" : "INATIVO";
+      msg += formatTime(gConfig.notification.quietEnd);
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
-      gState.notification.quietEnabled = true;
-      saveState(&gState);
+      gConfig.notification.quietEnabled = true;
+      saveStorage(FILE_CONFIG, &gConfig);
       msg = "\n🔔 Período quieto ATIVADO\n" +
-            formatTime(gState.notification.quietStart) + " - " +
-            formatTime(gState.notification.quietEnd);
+            formatTime(gConfig.notification.quietStart) + " - " +
+            formatTime(gConfig.notification.quietEnd);
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
-      gState.notification.quietEnabled = false;
-      saveState(&gState);
+      gConfig.notification.quietEnabled = false;
+      saveStorage(FILE_CONFIG, &gConfig);
       msg = "\n🔕 Período quieto DESATIVADO";
 
    } else if (totArgs == 2 && parseTime(arg1, &min1) &&
@@ -184,13 +182,13 @@ String cmdQuiet(const String &args) {
       if (min1 == min2) {
          msg = "\n⚠️ Horários inicial e final devem ser diferentes";
       } else {
-         gState.notification.quietStart = min1;
-         gState.notification.quietEnd = min2;
-         gState.notification.quietEnabled = true;
-         saveState(&gState);
+         gConfig.notification.quietStart = min1;
+         gConfig.notification.quietEnd = min2;
+         gConfig.notification.quietEnabled = true;
+         saveStorage(FILE_CONFIG, &gConfig);
          msg = "🔔 Período quieto:\nREDEFINIDO e ATIVADO\n" +
-               formatTime(gState.notification.quietStart) + " - " +
-               formatTime(gState.notification.quietEnd);
+               formatTime(gConfig.notification.quietStart) + " - " +
+               formatTime(gConfig.notification.quietEnd);
       }
 
    } else {
@@ -213,18 +211,18 @@ String cmdLed(const String &args) {
       msg = buildInfoLed();
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
-      gState.notification.ledMode = LED_MODE_OFF;
-      saveState(&gState);
+      gConfig.notification.ledMode = LED_MODE_OFF;
+      saveStorage(FILE_CONFIG, &gConfig);
       msg = "\nAtividade dos leds:\n⚪ DESATIVADA";
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
-      gState.notification.ledMode = LED_MODE_ON;
-      saveState(&gState);
+      gConfig.notification.ledMode = LED_MODE_ON;
+      saveStorage(FILE_CONFIG, &gConfig);
       msg = "\nAtividade dos leds:\n🔵 ATIVADA";
 
    } else if (totArgs == 1 && (arg1.equalsIgnoreCase("q") || arg1.equalsIgnoreCase("quiet"))) {
-      gState.notification.ledMode = LED_MODE_QUIET;
-      saveState(&gState);
+      gConfig.notification.ledMode = LED_MODE_QUIET;
+      saveStorage(FILE_CONFIG, &gConfig);
       msg = "\nAtividade do led:\n⚪🔵 DESATIVADA no PQ";
 
    } else {
@@ -291,7 +289,7 @@ bool telegramGetUpdates(TelegramUpdate *upd) {
 
    String url =
        "https://" + String(TELEGRAM_HOST) + "/bot" + TELEGRAM_BOT_TOKEN +
-       "/getUpdates?offset=" + String(gState.telegramUpdateId + 1) + "&limit=1";
+       "/getUpdates?offset=" + String(gRuntime.telegramUpdateId + 1) + "&limit=1";
 
    // DBG("%s\n", url.c_str());
 

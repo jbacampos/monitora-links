@@ -32,7 +32,7 @@ void setup() {
 
    // DBG("\n\n");
    // DBG("sizeof(LinkState) = %u\n", sizeof(LinkState));
-   // DBG("sizeof(Evento) = %u\n", sizeof(Evento));
+   // DBG("sizeof(Event) = %u\n", sizeof(Event));
    // DBG("sizeof(PendingNotification) = %u\n", sizeof(PendingNotification));
    // DBG("sizeof(NotificationSettings) = %u\n", sizeof(NotificationSettings));
    // DBG("sizeof(PersistState) = %u\n", sizeof(PersistState));
@@ -59,13 +59,15 @@ void loop() {
       ledsUpdate();
       DBG("\n=== %s ===\n", LINKS[i].nome);
 
-      uint8_t retries = (gState.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
+      uint8_t retries = (gRuntime.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
       status[i] = testConnection(LINKS[i].ssid, LINKS[i].senha, &rssi, retries);
 
-      processLink(&gState.links[i], i, status[i], rssi);
-      checkNotificationPolicy(); // Verifica se existe um link que caiu durante
-                                 // o horário de silêncio e gera a notificação
-                                 // quando sair dele
+      processLink(&gRuntime.links[i], i, status[i], rssi);
+       
+      // Verifica se existe um link que caiu durante
+      // o horário de silêncio e gera a notificação
+      // quando sair dele:
+      checkNotificationPolicy();
 
       if (hasPendingNotifications())
          sendPendingNotifications();
@@ -73,7 +75,7 @@ void loop() {
       DBG("Vai tratar comandos\n");
       uint32_t t0 = millis();
       if (!telegramChecked && status[i] == LINK_ONLINE) {
-         // DBG("telegramUpdateId = %lu\n", gState.telegramUpdateId);
+         // DBG("telegramUpdateId = %lu\n", gRuntime.telegramUpdateId);
          // DBG("Consultando Telegram...\n");
          for (uint8_t i = 0; i < MAX_UPDATES_PER_CYCLE; i++) {
             if (!telegramGetUpdates(&upd)) {
@@ -85,9 +87,10 @@ void loop() {
 
             t0 = millis();
 
-            gState.telegramUpdateId = upd.updateId;
-            saveState(&gState);
-            DBG("saveState: %lu ms\n", millis() - t0);
+            gRuntime.telegramUpdateId = upd.updateId;
+            saveStorage(FILE_RUNTIME, &gRuntime);
+            
+            DBG("save Runtime: %lu ms\n", millis() - t0);
 
             if (!isAuthorizedChat(upd.chatId)) {
                telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
@@ -125,8 +128,7 @@ void loop() {
    else
       ledStatus = LED_PARTIAL_DOWN;
 
-   gState.cicloCount++;
-   saveState(&gState);
+   gCycleCount++;
 
    ledEndCycle(ledStatus);
 

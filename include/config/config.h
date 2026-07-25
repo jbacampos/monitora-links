@@ -11,6 +11,16 @@
 #define FW_VERSION "1.0"
 #define MAGIC_NUMBER 0x56434D4F
 
+#define CONFIG_MAGIC     0x43464731
+#define CONFIG_VERSION   1
+
+#define RUNTIME_MAGIC    0x52554E31
+#define RUNTIME_VERSION  1
+
+#define EVENTS_MAGIC     0x45564E31
+#define EVENTS_VERSION   1
+
+
 // Incrementar sempre que PersistState mudar:
 #define STATE_VERSION 5 
 
@@ -56,14 +66,18 @@ enum LedMode : uint8_t { LED_MODE_OFF = 0, LED_MODE_ON, LED_MODE_QUIET };
  *********************************************************************/
 
 #define MAX_EVENTS 256
+extern uint32_t gCycleCount;
 
 /*********************************************************************
  * ARQUIVOS
  *********************************************************************/
 
 #define FILE_STATE "/state.bin"
-#define FILE_EVENTS "/events.bin"
-#define FILE_QUEUE "/queue.bin"
+
+constexpr char FILE_CONFIG[]  = "/config.bin";
+constexpr char FILE_RUNTIME[] = "/runtime.bin";
+constexpr char FILE_EVENTS[]  = "/events.bin";
+
 
 /******************************************************************************
  * NTP

@@ -9,12 +9,12 @@
 
 uint16_t getEventCount();
 
-const Evento *getEvent(uint16_t index);
+const Event *getEvent(uint16_t index);
 
 //=============================================================================
 // Gravação
 //=============================================================================
 
-void appendEvent(const Evento &evento);
+void appendEvent(const Event &evento);
 
 #endif

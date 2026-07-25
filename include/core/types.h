@@ -74,7 +74,8 @@ constexpr LinkConfig LINKS[NUM_LINKS] = {
 typedef enum : uint8_t {
    LINK_ONLINE,
    LINK_WIFI_FAIL,
-   LINK_INTERNET_FAIL
+   LINK_INTERNET_FAIL,
+   LINK_UNKNOWN
 } LinkStatus;
 
 typedef enum : uint8_t {
@@ -96,7 +97,6 @@ enum NotificationType : uint8_t { NOTIFY_DOWN, NOTIFY_UP };
 typedef struct {
    time_t ultimaMudanca;
    time_t inicioFalha;
-   time_t ultimoTeste;
    uint32_t eventoAtual;
    uint32_t totalFalhas;
    uint32_t totalTestes;
@@ -121,7 +121,7 @@ typedef struct {
    LinkStatus motivo;
    bool enviadoTelegram;
 
-} Evento;
+} Event;
 
 // Notificação pendente de envio.
 typedef struct {
@@ -159,34 +159,61 @@ typedef struct {
 // Estado persistente do sistema.
 typedef struct {
    NotificationSettings notification;
-   time_t ultimoHorarioValido;
    uint32_t magic;
    uint32_t bootCount;
-   uint32_t cicloCount;
    uint32_t watchdogCount;
-   uint32_t ciclosSemNTP;
-   uint32_t proximoEvento;
+   uint32_t lastEventId;
    uint32_t telegramUpdateId;
-
-uint32_t saveCount;
-
+   uint32_t saveCount;
    uint16_t version;
-   uint16_t primeiroEvento;
-   uint16_t numeroEventos;
-
-
-   Evento eventos[MAX_EVENTS];
+   uint16_t firstEventId;
+   uint16_t eventCounter;
+   Event eventos[MAX_EVENTS];
    LinkState links[NUM_LINKS];
    PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
 
-
 } PersistState;
+
+struct StorageHeader {
+    uint32_t magic;
+    uint16_t version;
+};
+
+struct ConfigData {
+    StorageHeader header;
+    NotificationSettings notification;
+   };
+   
+struct RuntimeData {
+   StorageHeader header;
+   uint32_t bootCount;
+   uint32_t watchdogCount;
+   uint32_t saveCount;
+   uint32_t telegramUpdateId;
+
+    LinkState links[NUM_LINKS];
+    PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
+};
+
+struct EventsData {
+    StorageHeader header;
+
+    uint32_t lastEventId;
+
+    uint16_t firstEventId;
+    uint16_t eventCounter;
+
+    Event events[MAX_EVENTS];
+};
+
 
 //=============================================================================
 // Interface pública
 //=============================================================================
 
-extern PersistState gState;
+extern ConfigData  gConfig;
+extern RuntimeData gRuntime;
+extern EventsData  gEvents;
 
 const char *linkStatusName(LinkStatus status);
 const char *linkStatusDescription(LinkStatus status);
