@@ -26,7 +26,7 @@ void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo,
    state->ultimoRSSI = rssi;
    DBG("\nEvento #%u iniciado\n", state->eventoAtual);
    DBG("Operadora : %s\n", LINKS[link].nome);
-   DBG("Motivo    : %s\n", linkStatusName(motivo));
+   DBG("Motivo    : %s\n", linkStatusDescription(motivo));
 
    if (quietHoursEnabled() && inQuietHours()) {
       DBG("\n*** Horário de silêncio: notificação não gerada\n");
@@ -54,7 +54,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
 
    DBG("\nEvento #%u encerrado\n", state->eventoAtual);
    DBG("Operadora : %s\n", LINKS[link].nome);
-   DBG("Motivo    : %s\n", linkStatusName(state->status));
+   DBG("Motivo    : %s\n", linkStatusDescription(state->status));
    if (state->inicioFalha != 0) {
       duracao = (uint32_t)(fim - state->inicioFalha);
       DBG("Inicio    : %s\n", formatDateTime(state->inicioFalha).c_str());

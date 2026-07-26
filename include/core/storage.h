@@ -99,11 +99,14 @@ bool saveStorage(const char* file, const T& data)
 //=============================================================================
 
 void createDefaultState();
-void resetState();
 
 void createDefaultConfig();
 void createDefaultRuntime();
 void createDefaultEvents();
+
+void resetConfig();
+void resetRuntime();
+void resetEvents();
 
 
 

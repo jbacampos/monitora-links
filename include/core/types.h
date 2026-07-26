@@ -55,10 +55,11 @@ constexpr LinkConfig LINKS[NUM_LINKS] = {
 
 #else
 
-constexpr uint8_t NUM_LINKS = 2;
+constexpr uint8_t NUM_LINKS = 3;
 constexpr LinkConfig LINKS[NUM_LINKS] = {
     {LINK_1, SSID_1, PASSWORD_1},
     {LINK_2, SSID_2, PASSWORD_2},
+    {LINK_3, SSID_3, PASSWORD_3},
 };
 
 #endif
@@ -215,7 +216,6 @@ extern ConfigData  gConfig;
 extern RuntimeData gRuntime;
 extern EventsData  gEvents;
 
-const char *linkStatusName(LinkStatus status);
 const char *linkStatusDescription(LinkStatus status);
 
 #endif

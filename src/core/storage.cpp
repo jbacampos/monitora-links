@@ -77,9 +77,19 @@ bool loadState(PersistState* st) {
 // Administração
 //=============================================================================
 
-void resetState() {
-   LittleFS.remove(FILE_STATE);
-   createDefaultState();
+void resetConfig() {
+   LittleFS.remove(FILE_CONFIG);
+   createDefaultConfig();
+}
+
+void resetRuntime() {
+   LittleFS.remove(FILE_RUNTIME);
+   createDefaultRuntime();
+}
+
+void resetEvents() {
+   LittleFS.remove(FILE_EVENTS);
+   createDefaultEvents();
 }
 
 void createDefaultConfig()
@@ -105,7 +115,7 @@ void createDefaultRuntime() {
    gRuntime.header.version = RUNTIME_VERSION;
 
    for (uint8_t i = 0; i < NUM_LINKS; i++) {
-      gRuntime.links[i].status = LINK_UNKNOWN;
+      gRuntime.links[i].status = LINK_ONLINE;
    }
 
    saveStorage(FILE_RUNTIME, gRuntime);
@@ -116,8 +126,6 @@ void createDefaultEvents() {
 
    gEvents.header.magic = EVENTS_MAGIC;
    gEvents.header.version = EVENTS_VERSION;
-
-   gEvents.lastEventId = 1;
 
    saveStorage(FILE_EVENTS, gEvents);
 }

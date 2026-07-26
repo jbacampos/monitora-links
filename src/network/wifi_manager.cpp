@@ -37,12 +37,7 @@ DBG("Início do connectWifi: %lu ms\n", millis() - t0);
 #elif defined(ESP32)
    WiFi.setSleep(false);
 #endif
-
-DBG("Após WiFi.mode: %lu ms\n", millis() - t0);
-
    WiFi.begin(ssid, password);
-
-DBG("Após WiFi.begin: %lu ms\n", millis() - t0);
 
    uint32_t start = millis();
    uint8_t cont = 0;
@@ -51,20 +46,19 @@ DBG("Após WiFi.begin: %lu ms\n", millis() - t0);
    while (WiFi.status() != WL_CONNECTED) {
 cont++;
       ledsUpdate();
-      delay(200);
+      delay(400);
       if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
          DBG("Timeout\n");
          return false;
       }
    }
-DBG("Após while (WiFi.status() != WL_CONNECTED): %lu ms\n", millis() - t0);
 DBG("Testes no while: %u\n", cont);
 
    // DBG("Status final: %d\n", WiFi.status());
    // DBG("Canal: %d\n", WiFi.channel());
    // DBG("BSSID: %s\n", WiFi.BSSIDstr().c_str());
-   DBG("IP   : %s\n", WiFi.localIP().toString().c_str());
-   DBG("RSSI : %d dBm\n", WiFi.RSSI());
+   // DBG("IP   : %s\n", WiFi.localIP().toString().c_str());
+   // DBG("RSSI : %d dBm\n", WiFi.RSSI());
 
    // String mac = WiFi.macAddress();
    // DBG("MAC: %s\n", mac.c_str());

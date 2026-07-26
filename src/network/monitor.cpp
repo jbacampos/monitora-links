@@ -7,8 +7,8 @@
 
 void processLink(LinkState *state, LinkId link, LinkStatus current, int16_t rssi) {
 
-   DBG("Status : %s -> %s", linkStatusName(state->status),
-       linkStatusName(current));
+   DBG("Status : %s -> %s", linkStatusDescription(state->status),
+       linkStatusDescription(current));
 
    if (current == state->status) {
       DBG(" (igual)\n");

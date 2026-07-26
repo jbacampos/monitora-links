@@ -81,7 +81,7 @@ String buildLog(uint16_t maxEventos) {
       msg += "\n";
 
       msg += "Motivo : ";
-      msg += linkStatusName(ev.motivo);
+      msg += linkStatusDescription(ev.motivo);
       msg += "\n";
 
       msg += "Inicio : ";

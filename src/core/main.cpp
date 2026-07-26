@@ -12,6 +12,8 @@
 #include "core/system.h"
 #include "network/telegram.h"
 #include "core/types.h"
+#include "config/platform.h"
+
 
 constexpr uint8_t MAX_UPDATES_PER_CYCLE = 10;
 
@@ -43,8 +45,31 @@ void setup() {
    // DBG("sizeof(NotificationType) = %u\n", sizeof(NotificationType));
    // DBG("sizeof(LinkId) = %u\n", sizeof(LinkId));
 
-   // Somente para apagar todo o histórico:
-   // resetState();
+   // Somente para apagar um arquivo:
+   // resetConfig();
+   // resetRuntime();
+   // resetEvents();
+
+
+
+connectWifi("Sitio", "OliverHuno2016!");
+
+Serial.println(WiFi.status());
+Serial.println(WiFi.localIP());
+Serial.println(WiFi.gatewayIP());
+Serial.println(WiFi.dnsIP());
+
+IPAddress ip;
+bool ok = WiFi.hostByName("api.telegram.org", ip);
+
+uint32_t t0 = millis();
+
+DBG("DNS: %s em %lu ms\n",
+    ok ? ip.toString().c_str() : "FALHOU",
+    millis() - t0);
+
+disconnectWifi();
+
 }
 
 void loop() {
@@ -63,7 +88,7 @@ void loop() {
       status[i] = testConnection(LINKS[i].ssid, LINKS[i].senha, &rssi, retries);
 
       processLink(&gRuntime.links[i], i, status[i], rssi);
-       
+
       // Verifica se existe um link que caiu durante
       // o horário de silêncio e gera a notificação
       // quando sair dele:
@@ -74,42 +99,57 @@ void loop() {
 
       DBG("Vai tratar comandos\n");
       uint32_t t0 = millis();
+      uint32_t t1 = millis();
       if (!telegramChecked && status[i] == LINK_ONLINE) {
          // DBG("telegramUpdateId = %lu\n", gRuntime.telegramUpdateId);
          // DBG("Consultando Telegram...\n");
          for (uint8_t i = 0; i < MAX_UPDATES_PER_CYCLE; i++) {
+t0 = millis();
+DBG("Vai chamar telegramGetUpdates...\n");
             if (!telegramGetUpdates(&upd)) {
+DBG("Chamou telegramGetUpdates, resultado = false, tempo = %lu ms\n", millis() - t0);
                break;
             }
             telegramChecked = true;
-            DBG("getUpdates: %lu ms\n", millis() - t0);
+DBG("Chamou telegramGetUpdates, resultado = true, tempo = %lu ms\n", millis() - t0);
             DBG("update recebido = %u\n", upd.updateId);
 
-            t0 = millis();
-
-            gRuntime.telegramUpdateId = upd.updateId;
-            saveStorage(FILE_RUNTIME, &gRuntime);
-            
-            DBG("save Runtime: %lu ms\n", millis() - t0);
-
+t0 = millis();
+DBG("Vai chamar isAuthorizedChat...\n");
             if (!isAuthorizedChat(upd.chatId)) {
+DBG("Chamou isAuthorizedChat, resultado = false, tempo = %lu ms\n", millis() - t0);
                telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
                continue;
             }
-            if (upd.text.isEmpty())
+DBG("Chamou isAuthorizedChat, resultado = true, tempo = %lu ms\n", millis() - t0);
+            
+            if (upd.text.isEmpty()) {
                continue;
-            t0 = millis();
+            }
 
-            String resposta = telegramProcessCommand(upd.text);
-            DBG("processCommand: %lu ms\n", millis() - t0);
             t0 = millis();
-            if (!resposta.isEmpty())
-               telegramSendMessage(resposta);
-            break;
+DBG("Vai chamar telegramProcessCommand...\n");
+            String resposta = telegramProcessCommand(upd.text);
+String resultado = resposta.isEmpty() ? "vazia" : "Válida";            
+DBG("Chamou telegramProcessCommand, resposta = %s, tempo = %lu ms\n", resultado.c_str(), millis() - t0);
+
+            if (!resposta.isEmpty()) {
+               t0 = millis();
+DBG("Vai chamar telegramSendMessage...\n");
+               if (!telegramSendMessage(resposta)) {
+DBG("Chamou telegramProcessCommand, resultado = false, tempo = %lu ms\n", millis() - t0);
+                  break;
+               }
+DBG("Chamou telegramProcessCommand, resultado = true, tempo = %lu ms\n", millis() - t0);
+            }
+
+            t0 = millis();
+            gRuntime.telegramUpdateId = upd.updateId;
+            saveStorage(FILE_RUNTIME, &gRuntime);
+            DBG("save Runtime: %lu ms\n", millis() - t0);
          }
       }
-      DBG("sendMessage: %lu ms\n", millis() - t0);
-      DBG("Tratou comandos\n");
+      DBG("Tratou comandos: %lu ms\n", millis() - t1);
 
       disconnectWifi();
    }
