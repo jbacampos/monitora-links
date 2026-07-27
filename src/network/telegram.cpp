@@ -257,26 +257,16 @@ bool telegramSendMessage(const String &text) {
    String url = "https://" + String(TELEGRAM_HOST) + "/bot" +
                 TELEGRAM_BOT_TOKEN + "/sendMessage";
 
-DBG("Entrou no telegramSendMessage. URL = \n%s\n", url.c_str());
+   DBG("Entrou no telegramSendMessage. URL = \n%s\n", url.c_str());
 
-DBG("Heap início: %u\n", ESP.getFreeHeap());
    WiFiClientSecure client;
    client.setInsecure();
-DBG("Heap após client: %u\n", ESP.getFreeHeap());
    HTTPClient http;
-DBG("Heap após HTTPClient: %u\n", ESP.getFreeHeap());
-
-
-uint32_t t = millis();
-DBG("begin...\n");
 
    if (!http.begin(client, url)) {
       DBG("Telegram: erro em http.begin()\n");
       return false;
    }
-
-
-DBG("http.begin: %lu ms\n", millis() - t);
 
    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -284,14 +274,7 @@ DBG("http.begin: %lu ms\n", millis() - t);
                  "&text=" + text;
 
 
-t = millis();
-DBG("POST...\n");
-DBG("Heap livre: %u\n", ESP.getFreeHeap());
-
    int code = http.POST(body);
-
-DBG("http.POST: %lu ms\n", millis() - t);
-DBG("Heap livre: %u\n", ESP.getFreeHeap());
 
    if (code == HTTP_CODE_OK) {
       DBG("Telegram: mensagem enviada\n");
@@ -299,10 +282,7 @@ DBG("Heap livre: %u\n", ESP.getFreeHeap());
       DBG("Telegram... %s (%d)\n", http.errorToString(code).c_str(), code);
    }
 
-t = millis();
-
    http.end();
-DBG("http.end: %lu ms\n", millis() - t);   
 
    return (code == HTTP_CODE_OK);
 }
@@ -314,68 +294,40 @@ DBG("http.end: %lu ms\n", millis() - t);
 bool telegramGetUpdates(TelegramUpdate *upd) {
 
    String url =
-      "https://" + String(TELEGRAM_HOST) +
-      "/bot" + TELEGRAM_BOT_TOKEN +
-      "/getUpdates?offset=" +
-      String(gRuntime.telegramUpdateId + 1) +
-      "&limit=1";       
-
-// url = "https://www.google.com/generate_204";       
-
-WiFiClient client1;
-uint32_t t = millis();
-
-bool okk = client1.connect("1.1.1.1", 80);
-
-Serial.printf("TCP: %s (%lu ms)\n",
-              okk ? "OK" : "FALHOU",
-              millis() - t);
-
-client1.stop();
-
-
-
-DBG("Entrou no telegramGetUpdates. URL = \n%s\n", url.c_str());
+   "https://" + String(TELEGRAM_HOST) +
+   "/bot" + TELEGRAM_BOT_TOKEN +
+   "/getUpdates?offset=" +
+   String(gRuntime.telegramUpdateId + 1) +
+   "&limit=1";       
+   DBG("Entrou no telegramGetUpdates. URL = \n%s\n", url.c_str());
 
    WiFiClientSecure client;
    client.setInsecure();
-
    HTTPClient http;
 
-
-t = millis();
-DBG("http.begin...\n");
 
    if (!http.begin(client, url)) {
       DBG("Telegram: erro em http.begin()\n");
       return false;
    }
 
-DBG("http.begin: %lu ms\n", millis() - t);
-
-
-t = millis();
-DBG("http.GET...\n");
+uint32_t t = millis();
+DBG("Vai fazer o http.GET...\n");
 
    int code = http.GET();
 
-DBG("http.GET: %lu ms\n", millis() - t);
+DBG("http.GET terminado: %lu ms\n", millis() - t);
 
    bool ok = false;
 
    if (code == HTTP_CODE_OK) {
       String json = http.getString();
-DBG("Resposta (%u bytes):\n%s\n", json.length(), json.c_str());      
       ok = telegramParseUpdate(json, upd);
    } else {
       DBG("Telegram... %s (%d)\n", http.errorToString(code).c_str(), code);
    }
 
-t = millis();
-
    http.end();
-
-DBG("http.end: %lu ms\n", millis() - t);
 
    return ok;
 }

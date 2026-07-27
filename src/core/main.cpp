@@ -50,26 +50,6 @@ void setup() {
    // resetRuntime();
    // resetEvents();
 
-
-
-connectWifi("Sitio", "OliverHuno2016!");
-
-Serial.println(WiFi.status());
-Serial.println(WiFi.localIP());
-Serial.println(WiFi.gatewayIP());
-Serial.println(WiFi.dnsIP());
-
-IPAddress ip;
-bool ok = WiFi.hostByName("api.telegram.org", ip);
-
-uint32_t t0 = millis();
-
-DBG("DNS: %s em %lu ms\n",
-    ok ? ip.toString().c_str() : "FALHOU",
-    millis() - t0);
-
-disconnectWifi();
-
 }
 
 void loop() {
@@ -114,24 +94,16 @@ DBG("Chamou telegramGetUpdates, resultado = false, tempo = %lu ms\n", millis() -
 DBG("Chamou telegramGetUpdates, resultado = true, tempo = %lu ms\n", millis() - t0);
             DBG("update recebido = %u\n", upd.updateId);
 
-t0 = millis();
-DBG("Vai chamar isAuthorizedChat...\n");
             if (!isAuthorizedChat(upd.chatId)) {
-DBG("Chamou isAuthorizedChat, resultado = false, tempo = %lu ms\n", millis() - t0);
                telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
                continue;
             }
-DBG("Chamou isAuthorizedChat, resultado = true, tempo = %lu ms\n", millis() - t0);
-            
             if (upd.text.isEmpty()) {
                continue;
             }
 
             t0 = millis();
-DBG("Vai chamar telegramProcessCommand...\n");
             String resposta = telegramProcessCommand(upd.text);
-String resultado = resposta.isEmpty() ? "vazia" : "Válida";            
-DBG("Chamou telegramProcessCommand, resposta = %s, tempo = %lu ms\n", resultado.c_str(), millis() - t0);
 
             if (!resposta.isEmpty()) {
                t0 = millis();
@@ -143,10 +115,8 @@ DBG("Chamou telegramProcessCommand, resultado = false, tempo = %lu ms\n", millis
 DBG("Chamou telegramProcessCommand, resultado = true, tempo = %lu ms\n", millis() - t0);
             }
 
-            t0 = millis();
             gRuntime.telegramUpdateId = upd.updateId;
             saveStorage(FILE_RUNTIME, &gRuntime);
-            DBG("save Runtime: %lu ms\n", millis() - t0);
          }
       }
       DBG("Tratou comandos: %lu ms\n", millis() - t1);
