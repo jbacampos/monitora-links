@@ -2,7 +2,9 @@
 #define STORAGE_H
 
 #include <LittleFS.h>
+#include <type_traits>
 
+#include "config/config.h"
 #include "core/types.h"
 
 //=============================================================================
@@ -14,9 +16,6 @@ bool initFS();
 //=============================================================================
 // Persistência
 //=============================================================================
-
-bool loadState(PersistState *st);
-bool saveState(PersistState *st);
 
 template<typename T>
 bool loadStorage(const char* file,
@@ -67,10 +66,13 @@ bool loadStorage(const char* file,
     return true;
 }
 
-
 template<typename T>
 bool saveStorage(const char* file, const T& data)
 {
+
+    static_assert(!std::is_pointer<T>::value,
+              "saveStorage(): passe o objeto, não um ponteiro.");
+
     File f = LittleFS.open(file, "w");
 
     if (!f) {

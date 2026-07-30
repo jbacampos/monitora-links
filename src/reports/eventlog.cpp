@@ -33,7 +33,7 @@ void appendEvent(const Event &evento) {
       gEvents.firstEventId = (gEvents.firstEventId + 1) % MAX_EVENTS;
    }
 
-   if (saveStorage(FILE_EVENTS, &gEvents)) {
+   if (saveStorage(FILE_EVENTS, gEvents)) {
       DBG("Evento gravado. Total: %u\n", gEvents.eventCounter);
    } else {
       DBG("ERRO gravando historico de eventos.\n");

@@ -23,55 +23,6 @@ bool initFS() {
 #endif
 }
 
-//=============================================================================
-// Persistência
-//=============================================================================
-
-bool loadState(PersistState* st) {
-   File f = LittleFS.open(FILE_STATE, "r");
-
-   if (!f) {
-      DBG("state.bin inexistente.\n");
-      return false;
-   }
-
-   if (f.size() != sizeof(PersistState)) {
-      DBG("Tamanho de state.bin incompatível\n");
-      DBG("Arquivo : %u bytes\n", (unsigned)f.size());
-      DBG("Esperado: %u bytes\n", sizeof(PersistState));
-
-      f.close();
-      return false;
-   }
-
-   size_t lidos = f.read((uint8_t*)st, sizeof(PersistState));
-
-   f.close();
-
-   if (lidos != sizeof(PersistState)) {
-      DBG("Bytes lidos não batem com o tamanho de PersistState\n");
-      DBG("Lidos.......: %u\n", lidos);
-      DBG("Esperado....: %u\n", sizeof(PersistState));
-      return false;
-   }
-
-   if (st->magic != MAGIC_NUMBER) {
-      DBG("MAGIC_NUMBER inválido.\n");
-      DBG("Lido........: %u\n", st->magic);
-      DBG("Esperado....: %u\n", MAGIC_NUMBER);
-      return false;
-   }
-
-   if (st->version != STATE_VERSION) {
-      DBG("STATE_VERSION incompatível.\n");
-      DBG("Lido........: %u\n", st->version);
-      DBG("Esperado....: %u\n", STATE_VERSION);
-      return false;
-   }
-
-   return true;
-}
-
 
 //=============================================================================
 // Administração
@@ -114,7 +65,7 @@ void createDefaultRuntime() {
    gRuntime.header.magic = RUNTIME_MAGIC;
    gRuntime.header.version = RUNTIME_VERSION;
 
-   for (uint8_t i = 0; i < NUM_LINKS; i++) {
+   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
       gRuntime.links[i].status = LINK_ONLINE;
    }
 

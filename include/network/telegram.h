@@ -15,6 +15,11 @@ typedef struct {
 
 extern TelegramUpdate gUpdate;
 
+typedef struct {
+   String message;
+   void (*deferredFunction)() = nullptr;
+} CommandResult;
+
 //=============================================================================
 // Inicialização
 //=============================================================================
@@ -33,7 +38,7 @@ bool telegramGetUpdates(TelegramUpdate *upd);
 // Processamento
 //=============================================================================
 
-String telegramProcessCommand(const String &text);
+CommandResult telegramProcessCommand(const String &text);
 
 uint8_t splitArgs(const String &args, String &arg1, String &arg2, String &arg3);
 bool parseTime(const String &str, uint16_t *minutes);

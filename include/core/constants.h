@@ -1,0 +1,19 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#define MAX_LINKS 3
+#define MAX_EVENTS 256
+#define MAX_PENDING_NOTIFICATIONS 4
+
+#define CONFIG_MAGIC     0x43464731
+#define CONFIG_VERSION   1
+
+#define RUNTIME_MAGIC    0x52554E31
+#define RUNTIME_VERSION  1
+
+#define EVENTS_MAGIC     0x45564E31
+#define EVENTS_VERSION   1
+
+#define STATE_VERSION 5
+
+#endif

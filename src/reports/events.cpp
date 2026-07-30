@@ -25,7 +25,7 @@ void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo,
    state->ultimaMudanca = state->inicioFalha;
    state->ultimoRSSI = rssi;
    DBG("\nEvento #%u iniciado\n", state->eventoAtual);
-   DBG("Operadora : %s\n", LINKS[link].nome);
+   DBG("Operadora : %s\n", gPerfil->links[link].nome);
    DBG("Motivo    : %s\n", linkStatusDescription(motivo));
 
    if (quietHoursEnabled() && inQuietHours()) {
@@ -53,7 +53,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
    state->ultimoRSSI = rssi;
 
    DBG("\nEvento #%u encerrado\n", state->eventoAtual);
-   DBG("Operadora : %s\n", LINKS[link].nome);
+   DBG("Operadora : %s\n", gPerfil->links[link].nome);
    DBG("Motivo    : %s\n", linkStatusDescription(state->status));
    if (state->inicioFalha != 0) {
       duracao = (uint32_t)(fim - state->inicioFalha);

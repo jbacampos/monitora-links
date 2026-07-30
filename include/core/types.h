@@ -20,8 +20,9 @@
 #include <Arduino.h>
 #include <time.h>
 
-#include "config/config.h"
 #include "config/secrets.h"
+#include "core/constants.h"
+
 
 //=============================================================================
 // Tipos básicos
@@ -30,54 +31,34 @@
 typedef uint8_t LinkId;
 
 //=============================================================================
-// Configuração dos links monitorados
+// Configuração dos perfis de monitoração
 //=============================================================================
 
 typedef struct {
-   const char *nome;
-   const char *ssid;
-   const char *senha;
+   const char* nome; // nome da rede, como será exibida nos logs e notificações
+   const char* ssid;
+   const char* senha;
+   bool identificaLocal;
 } LinkConfig;
 
-// Para alterar ou incluir links a serem monitorados:
-// 1) altere o valor de NUM_LINKS
-// 2) aumente ou diminua o array LINKS
-// 3) configure as constantes LINK_x, SSID_x e PASSWORD_x em "secrets.h"
+typedef struct {
+   const char* telegramToken;
+   const char* telegramChatId;
+} TelegramConfig;
 
-#if EM_POA
-
-constexpr uint8_t NUM_LINKS = 3;
-constexpr LinkConfig LINKS[NUM_LINKS] = {
-    {LINK_1, SSID_1, PASSWORD_1},
-    {LINK_2, SSID_2, PASSWORD_2},
-    {LINK_3, SSID_3, PASSWORD_3},
-};
-
-#else
-
-constexpr uint8_t NUM_LINKS = 3;
-constexpr LinkConfig LINKS[NUM_LINKS] = {
-    {LINK_1, SSID_1, PASSWORD_1},
-    {LINK_2, SSID_2, PASSWORD_2},
-    {LINK_3, SSID_3, PASSWORD_3},
-};
-
-#endif
-
-#define EmojiOnline  "🟢"
-#define EmojiOffline "🔴"
+typedef struct {
+   const char* nome; // nome do perfil, para exibição no debug
+   uint8_t numLinks;
+   const LinkConfig* links;
+   const TelegramConfig* telegramConfig;
+} Perfil;
 
 
 //=============================================================================
 // Enumerações
 //=============================================================================
 
-typedef enum : uint8_t {
-   LINK_ONLINE,
-   LINK_WIFI_FAIL,
-   LINK_INTERNET_FAIL,
-   LINK_UNKNOWN
-} LinkStatus;
+typedef enum : uint8_t { LINK_ONLINE, LINK_WIFI_FAIL, LINK_INTERNET_FAIL, LINK_UNKNOWN } LinkStatus;
 
 typedef enum : uint8_t {
    BOOT_POWERON,
@@ -89,6 +70,12 @@ typedef enum : uint8_t {
 } BootReason;
 
 enum NotificationType : uint8_t { NOTIFY_DOWN, NOTIFY_UP };
+
+enum LedMode : uint8_t {
+    LED_MODE_OFF = 0,
+    LED_MODE_ON,
+    LED_MODE_QUIET
+};
 
 //=============================================================================
 // Estruturas
@@ -170,21 +157,21 @@ typedef struct {
    uint16_t firstEventId;
    uint16_t eventCounter;
    Event eventos[MAX_EVENTS];
-   LinkState links[NUM_LINKS];
+   LinkState links[MAX_LINKS];
    PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
 
 } PersistState;
 
 struct StorageHeader {
-    uint32_t magic;
-    uint16_t version;
+   uint32_t magic;
+   uint16_t version;
 };
 
 struct ConfigData {
-    StorageHeader header;
-    NotificationSettings notification;
-   };
-   
+   StorageHeader header;
+   NotificationSettings notification;
+};
+
 struct RuntimeData {
    StorageHeader header;
    uint32_t bootCount;
@@ -192,30 +179,31 @@ struct RuntimeData {
    uint32_t saveCount;
    uint32_t telegramUpdateId;
 
-    LinkState links[NUM_LINKS];
-    PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
+   LinkState links[MAX_LINKS];
+   PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
 };
 
 struct EventsData {
-    StorageHeader header;
+   StorageHeader header;
 
-    uint32_t lastEventId;
+   uint32_t lastEventId;
 
-    uint16_t firstEventId;
-    uint16_t eventCounter;
+   uint16_t firstEventId;
+   uint16_t eventCounter;
 
-    Event events[MAX_EVENTS];
+   Event events[MAX_EVENTS];
 };
-
 
 //=============================================================================
 // Interface pública
 //=============================================================================
 
-extern ConfigData  gConfig;
+extern ConfigData gConfig;
 extern RuntimeData gRuntime;
-extern EventsData  gEvents;
+extern EventsData gEvents;
 
-const char *linkStatusDescription(LinkStatus status);
+extern const Perfil* gPerfil;
+
+const char* linkStatusDescription(LinkStatus status);
 
 #endif

@@ -35,8 +35,13 @@ void setColor(LedColor color) {
       b = 50; // Azul menos intenso
       break;
    case LED_YELLOW:
+   #ifdef ESP32
+      r = 600;
+      g = 15; // Ajustado visualmente
+   #else // ESP8266:
       r = 500;
       g = 30; // Ajustado visualmente
+   #endif
       break;
    case LED_RED:
       r = 1023;

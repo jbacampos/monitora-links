@@ -2,26 +2,17 @@
 #define CONFIG_H
 
 #include <Arduino.h>
+#include "core/types.h"
 #include "config/secrets.h"
+
 
 /*********************************************************************
  * VERSÃO
  *********************************************************************/
 
 #define FW_VERSION "1.0"
-#define MAGIC_NUMBER 0x56434D4F
 
-#define CONFIG_MAGIC     0x43464731
-#define CONFIG_VERSION   1
-
-#define RUNTIME_MAGIC    0x52554E31
-#define RUNTIME_VERSION  1
-
-#define EVENTS_MAGIC     0x45564E31
-#define EVENTS_VERSION   1
-
-
-// Incrementar sempre que PersistState mudar:
+// Incrementar sempre que mudar algum arquivo de configuração, para forçar a sua recriação:
 #define STATE_VERSION 5 
 
 /*********************************************************************
@@ -31,6 +22,14 @@
 #define DEV_MODE true
 #define ENABLE_SLEEP false 
       // Não usado por ora. Serve apenas para economizar energia, caso aalimentação seja por bateria
+
+
+/*********************************************************************
+ * Perfis de monitoração
+ *********************************************************************/
+
+#define EmojiOnline "🟢"
+#define EmojiOffline "🔴"
 
 /*********************************************************************
  * LED
@@ -49,7 +48,6 @@ constexpr uint8_t LED_BLUE_PIN  = 4;
 constexpr uint16_t LED_BLINK_PERIOD_MS = 300;
 constexpr uint16_t LED_STATUS_HOLD_MS = 5000;
 
-enum LedMode : uint8_t { LED_MODE_OFF = 0, LED_MODE_ON, LED_MODE_QUIET };
 
 /*********************************************************************
  * NOTIFICAÇÕES

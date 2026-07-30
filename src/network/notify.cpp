@@ -21,7 +21,7 @@ static String buildMessage(const PendingNotification &n) {
    if (n.tipo == NOTIFY_DOWN) {
       msg += EmojiOffline;
       msg += " ";
-      msg += LINKS[n.link].nome;
+      msg += gPerfil->links[n.link].nome;
       msg += " OFFLINE\n\n";
 
       msg += "Motivo :   ";
@@ -38,7 +38,7 @@ static String buildMessage(const PendingNotification &n) {
    } else {
       msg += EmojiOnline;
       msg += " ";
-      msg += LINKS[n.link].nome;
+      msg += gPerfil->links[n.link].nome;
       msg += " ONLINE\n\n";
 
       msg += "Inicio      :   ";
@@ -123,7 +123,7 @@ void clearPendingNotifications() {
    }
 
    if (mudou)
-      saveStorage(FILE_RUNTIME, &gRuntime);
+      saveStorage(FILE_RUNTIME, gRuntime);
 }
 
 void sendPendingNotifications() {
@@ -147,7 +147,7 @@ void sendPendingNotifications() {
 
       if (telegramSendMessage(msg)) {
          n.pending = false;
-         saveStorage(FILE_RUNTIME, &gRuntime);
+         saveStorage(FILE_RUNTIME, gRuntime);
       } else {
          DBG("Falha ao enviar notificacao #%u\n",
              gRuntime.pendingNotifications[i].evento);
@@ -216,7 +216,7 @@ void checkNotificationPolicy() {
 
    // Acabou de sair do horário de silêncio.
 
-   for (uint8_t i = 0; i < NUM_LINKS; i++) {
+   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
 
       LinkState *ls = &gRuntime.links[i];
 
@@ -248,6 +248,6 @@ void checkNotificationPolicy() {
    }
 
    if (modificou)
-      saveStorage(FILE_RUNTIME, &gRuntime);
+      saveStorage(FILE_RUNTIME, gRuntime);
    
 }

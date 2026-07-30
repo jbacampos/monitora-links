@@ -1,5 +1,6 @@
 #include "reports/reports.h"
 
+#include "config/config.h"
 #include "reports/eventlog.h"
 #include "network/notify.h"
 #include "network/ntp.h"
@@ -16,8 +17,8 @@ String buildStatus() {
 
    msg += "<b><u>Links\n\n</u></b>";
 
-   for (uint8_t i = 0; i < NUM_LINKS; i++) {
-      const LinkConfig &cfg = LINKS[i];
+   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+      const LinkConfig &cfg = gPerfil->links[i];
       const LinkState &link = gRuntime.links[i];
 
       if (link.status == LINK_ONLINE) {
@@ -46,7 +47,7 @@ String buildStatus() {
          msg += "\n";
       }
 
-      if (i < NUM_LINKS - 1)
+      if (i < gPerfil->numLinks - 1)
          msg += "\n";
    }
 
@@ -71,30 +72,35 @@ String buildLog(uint16_t maxEventos) {
    uint16_t inicio = (total > maxEventos) ? total - maxEventos : 0;
 
    for (uint16_t i = inicio; i < total; i++) {
-      const Event &ev = *getEvent(i);
-      const LinkConfig &cfg = LINKS[ev.link];
+
+      const Event* ev = getEvent(i);
+      if (ev == nullptr) {
+         msg += "\nERRO: getEvent retornou nullptr\n";
+         continue;
+      }
+      const LinkConfig& cfg = gPerfil->links[ev->link];
 
       msg += "\n#";
-      msg += String(ev.id);
+      msg += String(ev->id);
       msg += " ";
       msg += cfg.nome;
       msg += "\n";
 
       msg += "Motivo : ";
-      msg += linkStatusDescription(ev.motivo);
+      msg += linkStatusDescription(ev->motivo);
       msg += "\n";
 
       msg += "Inicio : ";
 
-      if (ev.inicio != 0)
-         msg += formatDateTime(ev.inicio, DATETIME_SHORT);
+      if (ev->inicio != 0)
+         msg += formatDateTime(ev->inicio, DATETIME_SHORT);
       else
          msg += "desconhecido";
 
       msg += "\n";
 
       msg += "Duracao: ";
-      msg += formatDuration(ev.duracaoSeg);
+      msg += formatDuration(ev->duracaoSeg);
       msg += "\n";
    }
 
@@ -146,8 +152,8 @@ String buildStatistics(uint16_t dias) {
 
    msg += "==========================\n";
 
-   for (uint8_t i = 0; i < NUM_LINKS; i++) {
-      const LinkConfig &cfg = LINKS[i];
+   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+      const LinkConfig &cfg = gPerfil->links[i];
 
       msg += "\n=== ";
       msg += cfg.nome;

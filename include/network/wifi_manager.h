@@ -1,5 +1,5 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef WIFI_MANAGER_H
+#define WIFI_MANAGER_H
 
 #include "core/types.h"
 
@@ -8,6 +8,8 @@
 //=============================================================================
 
 bool connectWifi(const char *ssid, const char *password);
+
+bool ssidFound(const char* ssid);
 
 void disconnectWifi();
 
