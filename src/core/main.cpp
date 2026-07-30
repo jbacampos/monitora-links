@@ -17,6 +17,7 @@
 
 
 constexpr uint8_t MAX_UPDATES_PER_CYCLE = 10;
+constexpr uint32_t TELEGRAM_GET_UPDATES_INTERVAL = 5000; // 1 segundo
 
 void setup() {
 
@@ -65,6 +66,7 @@ void loop() {
    LinkStatus status[gPerfil->numLinks];
    TelegramUpdate upd;
    bool telegramChecked = false;
+   uint32_t proximoGetUpdates = millis();
 
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
       ledsUpdate();
@@ -83,15 +85,20 @@ void loop() {
       if (hasPendingNotifications())
          sendPendingNotifications();
 
-      DBG("Vai tratar comandos\n");
       uint32_t t0 = millis();
       uint32_t t1 = millis();
       if (!telegramChecked && status[i] == LINK_ONLINE) {
          // DBG("telegramUpdateId = %lu\n", gRuntime.telegramUpdateId);
          // DBG("Consultando Telegram...\n");
          for (uint8_t i = 0; i < MAX_UPDATES_PER_CYCLE; i++) {
-t0 = millis();
+
+            if (millis() < proximoGetUpdates) {
+               break;
+            }
+            proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
+
 DBG("Vai chamar telegramGetUpdates...\n");
+t0 = millis();
             if (!telegramGetUpdates(&upd)) {
 DBG("Chamou telegramGetUpdates, resultado = false, tempo = %lu ms\n", millis() - t0);
                break;
@@ -132,7 +139,6 @@ DBG("Tem deferredFunction, vai executá-la:\n");
             }
          }
       }
-      DBG("Tratou comandos: %lu ms\n", millis() - t1);
 
       disconnectWifi();
    }
