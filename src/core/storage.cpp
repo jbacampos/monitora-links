@@ -6,9 +6,9 @@
 // Estado global
 //=============================================================================
 
-ConfigData gConfig;
-RuntimeData gRuntime;
-EventsData gEvents;
+ConfigData gConfig{};
+RuntimeData gRuntime{};
+EventsData gEvents{};
 
 //=============================================================================
 // Sistema de arquivos

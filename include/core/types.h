@@ -58,23 +58,37 @@ typedef struct {
 // Enumerações
 //=============================================================================
 
-typedef enum : uint8_t { LINK_ONLINE, LINK_WIFI_FAIL, LINK_INTERNET_FAIL, LINK_UNKNOWN } LinkStatus;
+typedef enum : uint8_t { 
+   LINK_ONLINE = 0, 
+   LINK_WIFI_FAIL, 
+   LINK_INTERNET_FAIL, 
+   LINK_DNS_FAIL,
+   LINK_UNKNOWN
+} LinkStatus;
+
+constexpr LinkId LINK_SYSTEM = static_cast<LinkId>(255);
 
 typedef enum : uint8_t {
-   BOOT_POWERON,
+   BOOT_POWERON = 0,
    BOOT_DEEPSLEEP,
    BOOT_EXTERNAL,
    BOOT_WATCHDOG,
    BOOT_SOFTWARE,
+   BOOT_AFTER_REBOOT_COMMAND,
    BOOT_UNKNOWN
 } BootReason;
 
-enum NotificationType : uint8_t { NOTIFY_DOWN, NOTIFY_UP };
+enum NotificationType : uint8_t { NOTIFY_DOWN, NOTIFY_UP, NOTIFY_BOOT};
 
 enum LedMode : uint8_t {
     LED_MODE_OFF = 0,
     LED_MODE_ON,
     LED_MODE_QUIET
+};
+
+enum EventType : uint8_t {
+    EVENT_LINK = 0,
+    EVENT_BOOT
 };
 
 //=============================================================================
@@ -107,6 +121,8 @@ typedef struct {
    int16_t rssi;
    LinkId link;
    LinkStatus motivo;
+   BootReason bootReason;
+   EventType tipo;
    bool enviadoTelegram;
 
 } Event;
@@ -121,6 +137,7 @@ typedef struct {
    NotificationType tipo;
    LinkId link;
    LinkStatus motivo;
+   BootReason bootReason;
    bool pending;
 
 } PendingNotification;
@@ -144,24 +161,6 @@ typedef struct {
 
 } NotificationSettings;
 
-// Estado persistente do sistema.
-typedef struct {
-   NotificationSettings notification;
-   uint32_t magic;
-   uint32_t bootCount;
-   uint32_t watchdogCount;
-   uint32_t lastEventId;
-   uint32_t telegramUpdateId;
-   uint32_t saveCount;
-   uint16_t version;
-   uint16_t firstEventId;
-   uint16_t eventCounter;
-   Event eventos[MAX_EVENTS];
-   LinkState links[MAX_LINKS];
-   PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
-
-} PersistState;
-
 struct StorageHeader {
    uint32_t magic;
    uint16_t version;
@@ -178,7 +177,8 @@ struct RuntimeData {
    uint32_t watchdogCount;
    uint32_t saveCount;
    uint32_t telegramUpdateId;
-
+   uint32_t rebootStartTime;
+   BootReason bootReason;
    LinkState links[MAX_LINKS];
    PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
 };
@@ -205,5 +205,7 @@ extern EventsData gEvents;
 extern const Perfil* gPerfil;
 
 const char* linkStatusDescription(LinkStatus status);
+const char *bootReasonDescription(BootReason reason);
+
 
 #endif

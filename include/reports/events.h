@@ -11,4 +11,6 @@ void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo, int16_t rssi);
 
 void onLinkUp(LinkState *state, LinkId link, int16_t rssi);
 
+void onBoot();
+
 #endif

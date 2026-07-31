@@ -83,11 +83,20 @@ String buildLog(uint16_t maxEventos) {
       msg += "\n#";
       msg += String(ev->id);
       msg += " ";
-      msg += cfg.nome;
+      if (ev->tipo == EVENT_BOOT) {
+         msg += "Monitor reiniciado";
+      } else {
+         msg += cfg.nome;
+      }
+
       msg += "\n";
 
       msg += "Motivo : ";
-      msg += linkStatusDescription(ev->motivo);
+      if (ev->tipo == EVENT_BOOT) {
+         msg += bootReasonDescription(ev->bootReason);
+      } else {
+         msg += linkStatusDescription(ev->motivo);
+      }
       msg += "\n";
 
       msg += "Inicio : ";

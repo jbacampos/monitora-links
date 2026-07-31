@@ -24,10 +24,11 @@ const LinkConfig linksSitio[] = { { .nome = "REDE SÍTIO",
                                     .ssid = "DispIoT",
                                     .senha = IOT_PASSWORD,
                                     .identificaLocal = true },
-                                  { .nome = "REDE CASINHA",
-                                    .ssid = "Casinha",
-                                    .senha = CASINHA_PASSWORD,
-                                    .identificaLocal = false } };
+                                 //  { .nome = "REDE CASINHA",
+                                 //    .ssid = "Casinha",
+                                 //    .senha = CASINHA_PASSWORD,
+                                 //    .identificaLocal = false } 
+                                 };
 
 const TelegramConfig telegramAP903 = { TLGRM_TOKEN_AP903, TLGRM_CHAT_ID_AP903 };
 
@@ -44,7 +45,7 @@ const Perfil perfis[] = { { "AP 903",
 
 const uint8_t numPerfis = sizeof(perfis) / sizeof(perfis[0]);
 
-const Perfil *gPerfil;
+const Perfil *gPerfil = nullptr;
 
 const Perfil *detectProfile() {
    int total = WiFi.scanNetworks();

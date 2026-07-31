@@ -13,8 +13,7 @@
 // Transição de estado dos links
 //=============================================================================
 
-void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo,
-                int16_t rssi) {
+void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo, int16_t rssi) {
 
    gEvents.lastEventId++;
    state->eventoAtual = gEvents.lastEventId;
@@ -66,7 +65,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
    DBG("Duracao   : %s\n", formatDuration(duracao).c_str());
 
    if (state->downNotificationSent && !inQuietHours()) {
-      PendingNotification n;
+      PendingNotification n = {};
       n.pending = true;
       n.link = link;
       n.motivo = state->status;
@@ -76,7 +75,6 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
       n.fim = fim;
       n.duracao = duracao;
       n.rssi = rssi;
-
       queueNotification(n);
    }
 
@@ -88,8 +86,57 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
    ev.fim = fim;
    ev.duracaoSeg = duracao;
    ev.rssi = rssi;
+   ev.tipo = EVENT_LINK;
    appendEvent(ev);
 
    state->eventoAtual = 0;
    state->inicioFalha = 0;
+}
+
+void onBoot() {
+
+   uint32_t duracao;
+   time_t fim = now();
+
+   DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(gRuntime.bootReason));
+   if (gRuntime.rebootStartTime != 0) {
+      duracao = (uint32_t)(fim - gRuntime.rebootStartTime);
+      DBG("Inicio    : %s\n", formatDateTime(gRuntime.rebootStartTime).c_str());
+   } else {
+      duracao = 0;
+      DBG("Inicio da falha desconhecido.\n");
+   }
+   DBG("Fim       : %s\n", formatDateTime(fim).c_str());
+   DBG("Duracao   : %s\n", formatDuration(duracao).c_str());
+   
+   Event ev = {};
+   gEvents.lastEventId++;
+   ev.id = gEvents.lastEventId;
+   ev.link = LINK_SYSTEM;
+   ev.bootReason = gRuntime.bootReason;
+   ev.inicio = gRuntime.rebootStartTime;
+   ev.fim = fim;
+   ev.duracaoSeg = duracao;
+   ev.rssi = 0;
+   ev.tipo = EVENT_BOOT;
+   appendEvent(ev);
+
+   PendingNotification n = {};
+   n.pending = true;
+   n.link = LINK_SYSTEM;
+   n.bootReason = gRuntime.bootReason;
+   n.tipo = NOTIFY_BOOT;
+   n.evento = gEvents.lastEventId;
+   n.inicio = gRuntime.rebootStartTime;
+   n.fim = fim;
+   n.duracao = duracao;
+   n.rssi = 0;
+
+   queueNotification(n);
+
+   gRuntime.bootReason = BOOT_POWERON;
+   gRuntime.rebootStartTime = now();
+   saveStorage(FILE_RUNTIME, gRuntime);
+
+   
 }

@@ -30,6 +30,7 @@
 
 #define EmojiOnline "🟢"
 #define EmojiOffline "🔴"
+#define EmojiReboot "✅"
 
 /*********************************************************************
  * LED

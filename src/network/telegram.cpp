@@ -4,34 +4,37 @@
 #include <WiFiClientSecure.h>
 
 #include "config/config.h"
-#include "network/wifi_manager.h"
-#include "network/notify.h"
 #include "config/platform.h"
-#include "reports/reports.h"
 #include "core/storage.h"
+#include "network/ntp.h"
+#include "network/notify.h"
+#include "network/wifi_manager.h"
+#include "reports/reports.h"
 
 //=============================================================================
 // Tipos internos
 //=============================================================================
 
-typedef CommandResult  (*CommandHandler)(const String &args);
+typedef CommandResult (*CommandHandler)(const String &args);
 
 typedef struct {
    const char *comando;
    CommandHandler handler;
 } TelegramCommand;
 
-
 //=============================================================================
 // Protótipos privados
 //=============================================================================
 
 static bool telegramParseUpdate(const String &json, TelegramUpdate *upd);
-bool parseUintArg(const String &args, uint16_t &value, uint16_t defaultValue,
-                  uint16_t minValue, uint16_t maxValue);
+bool parseUintArg(const String &args,
+                  uint16_t &value,
+                  uint16_t defaultValue,
+                  uint16_t minValue,
+                  uint16_t maxValue);
 static bool isUnsignedInteger(const String &s);
 
-static CommandResult  cmdHelp(const String &args);
+static CommandResult cmdHelp(const String &args);
 static CommandResult cmdStatus(const String &args);
 static CommandResult cmdStats(const String &args);
 static CommandResult cmdLog(const String &args);
@@ -46,20 +49,12 @@ static void doReboot();
 //=============================================================================
 
 static const TelegramCommand COMMANDS[] = {
-    {"/h", cmdHelp},        
-    {"/help", cmdHelp},    
-    {"/s", cmdStatus},
-    {"/status", cmdStatus}, 
-    {"/e", cmdStats},      
-    {"/stats", cmdStats},
-    {"/l", cmdLog},         
-    {"/log", cmdLog},      
-    {"/n", cmdNotify},
-    {"/notify", cmdNotify}, 
-    {"/q", cmdQuiet},      
-    {"/quiet", cmdQuiet},
-    {"/led", cmdLed},       
-    {"/reboot", cmdReboot}};
+   { "/h", cmdHelp },        { "/help", cmdHelp },    { "/s", cmdStatus },
+   { "/status", cmdStatus }, { "/e", cmdStats },      { "/stats", cmdStats },
+   { "/l", cmdLog },         { "/log", cmdLog },      { "/n", cmdNotify },
+   { "/notify", cmdNotify }, { "/q", cmdQuiet },      { "/quiet", cmdQuiet },
+   { "/led", cmdLed },       { "/reboot", cmdReboot }
+};
 
 constexpr uint8_t NUM_COMMANDS = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
 
@@ -96,13 +91,17 @@ CommandResult cmdHelp(const String &) {
    result.message += "/status | <b>/s</b>\nStatus atual do sistema\n\n";
    result.message += "/stats | <b>/e</b>   [dias]\nEstatísticas\n\n";
    result.message += "/log | <b>/l</b>   [n]\nÚltimos eventos\n\n";
-   result.message += "/notify | <b>/n</b>\nMostra a configuração das notificações\n\n";
-   result.message += "/notify | <b>/n</b>   on|off\nAtiva/desativa notificações\n\n";
-   result.message += "/quiet | <b>/q</b>\nConfiguração do período quieto (PQ)\n\n";
+   result.message +=
+       "/notify | <b>/n</b>\nMostra a configuração das notificações\n\n";
+   result.message +=
+       "/notify | <b>/n</b>   on|off\nAtiva/desativa notificações\n\n";
+   result.message +=
+       "/quiet | <b>/q</b>\nConfiguração do período quieto (PQ)\n\n";
    result.message += "/quiet | <b>/q</b>   on|off\nAtiva/desativa PQ\n\n";
    result.message += "/quiet | <b>/q</b>   hh:mm hh:mm\nDefine PQ\n\n";
    result.message += "<b>/led</b>\nConfiguração do led\n\n";
-   result.message += "<b>/led</b>   on|off|q[uiet]\nAtiva/desativa/desativa no PQ\n\n";
+   result.message +=
+       "<b>/led</b>   on|off|q[uiet]\nAtiva/desativa/desativa no PQ\n\n";
    result.message += "<b>/reboot</b>\nReinicia o monitor\n\n";
 
    return result;
@@ -119,7 +118,7 @@ CommandResult cmdStatus(const String &) {
 CommandResult cmdStats(const String &args) {
    uint16_t dias;
    CommandResult result;
-   
+
    if (!parseUintArg(args, dias, 5, 1, 180)) {
       result.message = "Uso:\n/stats [dias]\ndias = 1-180";
    } else {
@@ -143,7 +142,7 @@ CommandResult cmdLog(const String &args) {
 CommandResult cmdNotify(const String &args) {
    String arg1, arg2, arg3;
    int8_t totArgs;
-   
+
    CommandResult result;
 
    totArgs = splitArgs(args, arg1, arg2, arg3);
@@ -163,8 +162,8 @@ CommandResult cmdNotify(const String &args) {
 
    } else {
       result.message = "⚠️ Comando inválido.\nUso:\n"
-            "/notify|/n\n"
-            "/notify|/n on|off\n";
+                       "/notify|/n\n"
+                       "/notify|/n on|off\n";
    }
    return result;
 }
@@ -173,14 +172,15 @@ CommandResult cmdQuiet(const String &args) {
    String arg1, arg2, arg3;
    int8_t totArgs;
    uint16_t min1, min2;
-   
+
    CommandResult result;
 
    totArgs = splitArgs(args, arg1, arg2, arg3);
 
    if (totArgs == 0) {
       result.message += "\nPeríodo quieto:\n";
-      result.message += (gConfig.notification.quietEnabled) ? "ATIVO - " : "INATIVO - ";
+      result.message +=
+          (gConfig.notification.quietEnabled) ? "ATIVO - " : "INATIVO - ";
       result.message += formatTime(gConfig.notification.quietStart);
       result.message += " - ";
       result.message += formatTime(gConfig.notification.quietEnd);
@@ -189,8 +189,8 @@ CommandResult cmdQuiet(const String &args) {
       gConfig.notification.quietEnabled = true;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\n🔔 Período quieto ATIVADO\n" +
-            formatTime(gConfig.notification.quietStart) + " - " +
-            formatTime(gConfig.notification.quietEnd);
+                       formatTime(gConfig.notification.quietStart) + " - " +
+                       formatTime(gConfig.notification.quietEnd);
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
       gConfig.notification.quietEnabled = false;
@@ -207,15 +207,15 @@ CommandResult cmdQuiet(const String &args) {
          gConfig.notification.quietEnabled = true;
          saveStorage(FILE_CONFIG, gConfig);
          result.message = "🔔 Período quieto:\nREDEFINIDO e ATIVADO\n" +
-               formatTime(gConfig.notification.quietStart) + " - " +
-               formatTime(gConfig.notification.quietEnd);
+                          formatTime(gConfig.notification.quietStart) + " - " +
+                          formatTime(gConfig.notification.quietEnd);
       }
 
    } else {
       result.message = "⚠️ Comando inválido.\nUso:\n"
-            "/quiet|/q\n"
-            "/quiet|/q on|off\n"
-            "/quiet|/q hh:mm hh:mm\n";
+                       "/quiet|/q\n"
+                       "/quiet|/q on|off\n"
+                       "/quiet|/q hh:mm hh:mm\n";
    }
    return result;
 }
@@ -241,15 +241,16 @@ CommandResult cmdLed(const String &args) {
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\nAtividade dos leds:\n🔵 ATIVADA";
 
-   } else if (totArgs == 1 && (arg1.equalsIgnoreCase("q") || arg1.equalsIgnoreCase("quiet"))) {
+   } else if (totArgs == 1 &&
+              (arg1.equalsIgnoreCase("q") || arg1.equalsIgnoreCase("quiet"))) {
       gConfig.notification.ledMode = LED_MODE_QUIET;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\nAtividade do led:\n⚪🔵 DESATIVADA no PQ";
 
    } else {
       result.message = "⚠️ Comando inválido.\nUso:\n\n"
-            "/led\n"
-            "/led on|off|q[uiet]";
+                       "/led\n"
+                       "/led on|off|q[uiet]";
    }
 
    return result;
@@ -262,9 +263,24 @@ CommandResult cmdReboot(const String &) {
    return result;
 }
 
-void doReboot() {
+void doReboot()
+{
+   //  PendingNotification n = {};
+
+   // n.tipo = NOTIFY_BOOT;
+   // n.inicio = now();
+   // n.pending = true;
+
+   // queueNotification(n);
+
+   gRuntime.bootReason = BOOT_AFTER_REBOOT_COMMAND;
+   gRuntime.rebootStartTime = now();
+   saveStorage(FILE_RUNTIME, gRuntime);
+
    ESP.restart();
 }
+
+
 //=============================================================================
 // Inicialização
 //=============================================================================
@@ -293,9 +309,8 @@ bool telegramSendMessage(const String &text) {
 
    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-   String body = "chat_id=" + String(gPerfil->telegramConfig->telegramChatId) + "&parse_mode=HTML" +
-                 "&text=" + text;
-
+   String body = "chat_id=" + String(gPerfil->telegramConfig->telegramChatId) +
+                 "&parse_mode=HTML" + "&text=" + text;
 
    int code = http.POST(body);
 
@@ -316,30 +331,27 @@ bool telegramSendMessage(const String &text) {
 
 bool telegramGetUpdates(TelegramUpdate *upd) {
 
-   String url =
-   "https://" + String(TELEGRAM_HOST) +
-   "/bot" + gPerfil->telegramConfig->telegramToken +
-   "/getUpdates?offset=" +
-   String(gRuntime.telegramUpdateId + 1) +
-   "&limit=1";       
+   String url = "https://" + String(TELEGRAM_HOST) + "/bot" +
+                gPerfil->telegramConfig->telegramToken +
+                "/getUpdates?offset=" + String(gRuntime.telegramUpdateId + 1) +
+                "&limit=1";
    DBG("Entrou no telegramGetUpdates. URL = \n%s\n", url.c_str());
 
    WiFiClientSecure client;
    client.setInsecure();
    HTTPClient http;
 
-
    if (!http.begin(client, url)) {
       DBG("Telegram: erro em http.begin()\n");
       return false;
    }
 
-uint32_t t = millis();
-DBG("Vai fazer o http.GET...\n");
+   uint32_t t = millis();
+   DBG("Vai fazer o http.GET...\n");
 
    int code = http.GET();
 
-DBG("http.GET terminado: %lu ms\n", millis() - t);
+   DBG("http.GET terminado: %lu ms\n", millis() - t);
 
    bool ok = false;
 
@@ -405,8 +417,8 @@ static bool telegramParseUpdate(const String &json, TelegramUpdate *upd) {
    return true;
 }
 
-uint8_t splitArgs(const String &args, String &arg1, String &arg2,
-                  String &arg3) {
+uint8_t
+splitArgs(const String &args, String &arg1, String &arg2, String &arg3) {
 
    if (args.isEmpty())
       return 0;
@@ -432,8 +444,11 @@ uint8_t splitArgs(const String &args, String &arg1, String &arg2,
    return totArgs;
 }
 
-bool parseUintArg(const String &args, uint16_t &value, uint16_t defaultValue,
-                  uint16_t minValue, uint16_t maxValue) {
+bool parseUintArg(const String &args,
+                  uint16_t &value,
+                  uint16_t defaultValue,
+                  uint16_t minValue,
+                  uint16_t maxValue) {
 
    if (args.isEmpty()) {
       value = defaultValue;
@@ -485,6 +500,7 @@ static bool isUnsignedInteger(const String &s) {
 
 bool isAuthorizedChat(const String &chatId) {
    DBG("Telegram: chatId origem = %s\n", chatId.c_str());
-   DBG("Telegram: TELEGRAM_CHAT_ID = %s\n", String(gPerfil->telegramConfig->telegramChatId).c_str());
+   DBG("Telegram: TELEGRAM_CHAT_ID = %s\n",
+       String(gPerfil->telegramConfig->telegramChatId).c_str());
    return chatId == String(gPerfil->telegramConfig->telegramChatId);
 }

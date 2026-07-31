@@ -12,8 +12,7 @@
 
 static String buildMessage(const PendingNotification &n) {
 
-   String inicioTxt = (n.inicio != 0) ? formatDateTime(n.inicio, DATETIME_SHORT)
-                                      : "desconhecido";
+   String inicioTxt = (n.inicio != 0) ? formatDateTime(n.inicio, DATETIME_SHORT) : "desconhecido";
    String duracaoTxt =
        (n.inicio != 0) ? formatDuration(n.duracao) : "desconhecida";
    String msg;
@@ -35,7 +34,7 @@ static String buildMessage(const PendingNotification &n) {
       msg += "Evento :    #";
       msg += String(n.evento);
 
-   } else {
+   } else if (n.tipo == NOTIFY_UP){
       msg += EmojiOnline;
       msg += " ";
       msg += gPerfil->links[n.link].nome;
@@ -63,6 +62,30 @@ static String buildMessage(const PendingNotification &n) {
 
       msg += "Evento   :     #";
       msg += String(n.evento);
+
+   } else if (n.tipo == NOTIFY_BOOT) {
+      msg += EmojiReboot;
+      msg += " Monitor reiniciado\n\n";
+
+      msg += "Inicio      : ";
+      msg += formatDateTime(n.inicio, DATETIME_SHORT);
+      msg += "\n";
+
+      msg += "Fim         : ";
+      msg += formatDateTime(n.fim, DATETIME_SHORT);
+      msg += "\n";
+
+      msg += "Duracao : ";
+      msg += duracaoTxt;
+      msg += "\n";
+
+      msg += "Motivo   : ";
+      msg += bootReasonDescription(n.bootReason);
+      msg += "\n";
+
+      msg += "Evento    : #";
+      msg += String(n.evento);
+
    }
    return msg;
 }
@@ -72,6 +95,7 @@ static String buildMessage(const PendingNotification &n) {
 //=============================================================================
 
 void queueNotification(const PendingNotification &n) {
+   DBG("Adicionando notificacao #%u na fila\n", n.evento);
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
       if (!gRuntime.pendingNotifications[i].pending) {
          gRuntime.pendingNotifications[i] = n;
