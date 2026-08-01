@@ -96,15 +96,18 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
 void onBoot() {
 
    uint32_t duracao;
+   time_t inicio = 0;
    time_t fim = now();
 
    DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(gRuntime.bootReason));
-   if (gRuntime.rebootStartTime != 0) {
-      duracao = (uint32_t)(fim - gRuntime.rebootStartTime);
+   if (gRuntime.bootReason == BOOT_AFTER_REBOOT_COMMAND && gRuntime.rebootStartTime != 0) {
+      inicio = gRuntime.rebootStartTime;
+      duracao = (uint32_t)(fim - inicio);
       DBG("Inicio    : %s\n", formatDateTime(gRuntime.rebootStartTime).c_str());
    } else {
+      inicio = 0;
       duracao = 0;
-      DBG("Inicio da falha desconhecido.\n");
+      DBG("Inicio desconhecido.\n");
    }
    DBG("Fim       : %s\n", formatDateTime(fim).c_str());
    DBG("Duracao   : %s\n", formatDuration(duracao).c_str());
@@ -114,7 +117,7 @@ void onBoot() {
    ev.id = gEvents.lastEventId;
    ev.link = LINK_SYSTEM;
    ev.bootReason = gRuntime.bootReason;
-   ev.inicio = gRuntime.rebootStartTime;
+   ev.inicio = inicio;
    ev.fim = fim;
    ev.duracaoSeg = duracao;
    ev.rssi = 0;
@@ -127,7 +130,7 @@ void onBoot() {
    n.bootReason = gRuntime.bootReason;
    n.tipo = NOTIFY_BOOT;
    n.evento = gEvents.lastEventId;
-   n.inicio = gRuntime.rebootStartTime;
+   n.inicio = inicio;
    n.fim = fim;
    n.duracao = duracao;
    n.rssi = 0;

@@ -265,13 +265,6 @@ CommandResult cmdReboot(const String &) {
 
 void doReboot()
 {
-   //  PendingNotification n = {};
-
-   // n.tipo = NOTIFY_BOOT;
-   // n.inicio = now();
-   // n.pending = true;
-
-   // queueNotification(n);
 
    gRuntime.bootReason = BOOT_AFTER_REBOOT_COMMAND;
    gRuntime.rebootStartTime = now();
