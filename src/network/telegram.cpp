@@ -95,6 +95,7 @@ CommandResult cmdHelp(const String &) {
    result.message += "/quiet | <b>/q</b>   hh:mm hh:mm\nDefine PQ\n\n";
    result.message += "<b>/led</b>\nConfiguração do led\n\n";
    result.message += "<b>/led</b>   on|off|q[uiet]\nAtiva/desativa/desativa no PQ\n\n";
+   result.message += "<b>/ota</b>\nAtualiza o firmware\n\n";
    result.message += "<b>/reboot</b>\nReinicia o monitor\n\n";
 
    return result;

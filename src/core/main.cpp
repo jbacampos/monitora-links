@@ -133,12 +133,12 @@ void loop() {
             DBG("Chamou telegramProcessCommand, resposta = %s, tempo = %lu ms\n", cmdResult.message.c_str(), millis() - t0);
             if (!cmdResult.message.isEmpty()) {
                t0 = millis();
-               // DBG("Vai chamar telegramSendMessage...\n");
+               DBG("Vai chamar telegramSendMessage...\n");
                if (!telegramSendMessage(cmdResult.message)) {
-                  // DBG("Chamou telegramSendMessage, resultado = false, tempo = %lu ms\n", millis() - t0);
+                  DBG("Chamou telegramSendMessage, resultado = false, tempo = %lu ms\n", millis() - t0);
                   break;
                }
-               // DBG("Chamou telegramSendMessage, resultado = true, tempo = %lu ms\n", millis() - t0);
+               DBG("Chamou telegramSendMessage, resultado = true, tempo = %lu ms\n", millis() - t0);
             }
             // DBG("Novo updateId = %lu\n", upd.updateId);
             // DBG("updateId anterior = %lu\n", gRuntime.telegramUpdateId);

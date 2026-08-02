@@ -10,7 +10,10 @@
 //   - verifica se a atualização foi concluída;
 //   - retorna true em caso de sucesso.
 //
-// O reboot e as notificações são responsabilidade do chamador.
+// Para criar uma nova versão:
+//   - alterar a constante FW_VERSION no arquivo include/config/config.h
+//   - criar um release no GitHub, com a tag no formato vX.Y.Z (ex: v1.0.0)
+//   - anexar o binário do firmware (Monitora_Links.[esp32|esp8266].bin) ao release
 //=============================================================================
 
 #include "network/ota.h"
