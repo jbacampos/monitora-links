@@ -10,7 +10,9 @@
  * VERSÃO
  *********************************************************************/
 
-#define FW_VERSION "1.0"
+// #define FW_VERSION "1.0.0"   // Versão inicial estável
+#define FW_VERSION "1.1.0"    // Inclusão do suporte a OTA
+
 
 // Incrementar sempre que mudar algum arquivo de configuração, para forçar a sua recriação:
 #define STATE_VERSION 5 
@@ -108,7 +110,7 @@ constexpr char FILE_EVENTS[]  = "/events.bin";
 
 constexpr uint8_t LINK_TEST_RETRIES = 3;
 constexpr uint16_t RETRY_DELAY_MS = 300;
-constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 8000;
+constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 15000;
 
 /*********************************************************************
  * DEBUG

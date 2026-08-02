@@ -75,6 +75,7 @@ typedef enum : uint8_t {
    BOOT_WATCHDOG,
    BOOT_SOFTWARE,
    BOOT_AFTER_REBOOT_COMMAND,
+   BOOT_AFTER_OTA,
    BOOT_UNKNOWN
 } BootReason;
 

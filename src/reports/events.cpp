@@ -100,7 +100,7 @@ void onBoot() {
    time_t fim = now();
 
    DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(gRuntime.bootReason));
-   if (gRuntime.bootReason == BOOT_AFTER_REBOOT_COMMAND && gRuntime.rebootStartTime != 0) {
+   if ((gRuntime.bootReason == BOOT_AFTER_REBOOT_COMMAND || gRuntime.bootReason == BOOT_AFTER_OTA) && gRuntime.rebootStartTime != 0) {
       inicio = gRuntime.rebootStartTime;
       duracao = (uint32_t)(fim - inicio);
       DBG("Inicio    : %s\n", formatDateTime(gRuntime.rebootStartTime).c_str());

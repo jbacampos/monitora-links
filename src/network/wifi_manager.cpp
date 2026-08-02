@@ -27,7 +27,7 @@ static bool testInternet() {
 bool connectWifi(const char* ssid, const char* password) {
 
    uint32_t t0 = millis();
-   DBG("Início do connectWifi: %lu ms\n", millis() - t0);
+   // DBG("Início do connectWifi: %lu ms\n", millis() - t0);
 
    WiFi.mode(WIFI_STA);
    WiFi.setAutoReconnect(false);
@@ -45,9 +45,9 @@ bool connectWifi(const char* ssid, const char* password) {
    while (WiFi.status() != WL_CONNECTED) {
       cont++;
       ledsUpdate();
-      delay(400);
+      delay(RETRY_DELAY_MS);
       if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
-         DBG("Timeout\n");
+         DBG("Timeout na tentativa de conexão\n");
          return false;
       }
    }

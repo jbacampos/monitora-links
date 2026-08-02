@@ -30,6 +30,9 @@ const char *bootReasonDescription(BootReason reason) {
    case BOOT_AFTER_REBOOT_COMMAND:
       return "Comando /reboot";
 
+   case BOOT_AFTER_OTA:
+      return "Atualização OTA";
+
    default:
       return "Desconhecido";
    }
