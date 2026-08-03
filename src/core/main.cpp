@@ -23,6 +23,10 @@ void setup() {
    Serial.begin(115200);
    delay(6000);
 
+#ifdef ESP32
+   WiFi.onEvent(onWiFiEvent);
+#endif
+
    gPerfil = detectProfile();
    if (gPerfil == nullptr) {
       DBG("Local desconhecido.\n");
@@ -83,6 +87,17 @@ void loop() {
       uint8_t retries = (gRuntime.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
       status[i] = testConnection(gPerfil->links[i].ssid, gPerfil->links[i].senha, &rssi, retries);
 
+      if (status[i] == LINK_WIFI_FAIL) {
+         gRuntime.links[i].wifiFailCycles++;
+         if (gRuntime.links[i].wifiFailCycles < WIFI_FAIL_CYCLES) {
+            DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", gRuntime.links[i].wifiFailCycles, WIFI_FAIL_CYCLES);
+            continue;   // não chama processLink()
+         }
+      }
+      else {
+         gRuntime.links[i].wifiFailCycles = 0;
+      }
+
       processLink(&gRuntime.links[i], i, status[i], rssi);
 
       // Verifica se existe um link que caiu durante
@@ -109,7 +124,7 @@ void loop() {
             // t0 = millis();
             if (!telegramGetUpdates(&upd)) {
                // DBG("Chamou telegramGetUpdates, resultado = false, tempo = %lu ms\n", millis() - t0);
-               DBG("Nenhum comando via Telegram\n");
+               DBG("Nenhum comando recebido via Telegram\n");
                break;
             }
             telegramChecked = true;

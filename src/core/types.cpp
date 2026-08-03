@@ -25,7 +25,7 @@ const char *bootReasonDescription(BootReason reason) {
    switch (reason) {
 
    case BOOT_POWERON:
-      return "Reenergizado";
+      return "Energizado";
 
    case BOOT_AFTER_REBOOT_COMMAND:
       return "Comando /reboot";

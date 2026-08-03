@@ -64,26 +64,39 @@ static String buildMessage(const PendingNotification &n) {
       msg += String(n.evento);
 
    } else if (n.tipo == NOTIFY_BOOT) {
+      DBG("Montando mensagem de notificacao de reboot\n");
+      DBG("Início = %s\n", formatDateTime(n.inicio, DATETIME_SHORT).c_str());
+      DBG("Fim = %s\n", formatDateTime(n.fim, DATETIME_SHORT).c_str());
+      DBG("Duração = %s\n", formatDuration(n.duracao).c_str());
+
       msg += EmojiReboot;
       msg += " Monitor reiniciado\n\n";
 
-      msg += "Inicio      : ";
-      msg += formatDateTime(n.inicio, DATETIME_SHORT);
-      msg += "\n";
+      if (n.inicio) {
+         msg += "Inicio      :  ";
+         msg += formatDateTime(n.inicio, DATETIME_SHORT);
+         msg += "\n";
 
-      msg += "Fim         : ";
-      msg += formatDateTime(n.fim, DATETIME_SHORT);
-      msg += "\n";
+         msg += "Fim         :  ";
+         msg += formatDateTime(n.fim, DATETIME_SHORT);
+         msg += "\n";
 
-      msg += "Duracao : ";
-      msg += duracaoTxt;
-      msg += "\n";
+         msg += "Duracao :  ";
+         msg += duracaoTxt;
+         msg += "\n";
 
-      msg += "Motivo   : ";
+      } else {
+         msg += "Em           :  ";
+         msg += formatDateTime(n.fim, DATETIME_SHORT);
+         msg += "\n";
+
+      }
+
+      msg += "Motivo   :  ";
       msg += bootReasonDescription(n.bootReason);
       msg += "\n";
 
-      msg += "Evento    : #";
+      msg += "Evento    :  #";
       msg += String(n.evento);
 
    }

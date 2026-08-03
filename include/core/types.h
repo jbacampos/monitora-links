@@ -105,11 +105,10 @@ typedef struct {
    uint32_t totalTestes;
    uint32_t testesFalhos;
    uint32_t tempoFalhaAcumulado;
-
    int16_t ultimoRSSI;
-
    LinkStatus status;
    LinkStatus motivoFalha;
+   uint8_t wifiFailCycles;
    bool downNotificationSent;
 } LinkState;
 
