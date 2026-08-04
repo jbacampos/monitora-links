@@ -161,38 +161,37 @@ typedef struct {
 
 } NotificationSettings;
 
-struct StorageHeader {
+typedef struct {
    uint32_t magic;
    uint16_t version;
-};
+} StorageHeader;
 
-struct ConfigData {
+typedef struct {
+   uint32_t saveCount;
    StorageHeader header;
    NotificationSettings notification;
-};
+} ConfigData;
 
-struct RuntimeData {
-   StorageHeader header;
+typedef struct {
    uint32_t bootCount;
    uint32_t watchdogCount;
    uint32_t saveCount;
    uint32_t telegramUpdateId;
    uint32_t rebootStartTime;
+   StorageHeader header;
    BootReason bootReason;
    LinkState links[MAX_LINKS];
    PendingNotification pendingNotifications[MAX_PENDING_NOTIFICATIONS];
-};
+} RuntimeData;
 
-struct EventsData {
+typedef struct {
    StorageHeader header;
-
    uint32_t lastEventId;
-
+   uint32_t saveCount;
    uint16_t firstEventId;
    uint16_t eventCounter;
-
    Event events[MAX_EVENTS];
-};
+} EventsData;
 
 //=============================================================================
 // Interface pública

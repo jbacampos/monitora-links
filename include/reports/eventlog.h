@@ -16,5 +16,6 @@ const Event *getEvent(uint16_t index);
 //=============================================================================
 
 void appendEvent(const Event &evento);
+uint32_t reserveEventId(bool persist);
 
 #endif

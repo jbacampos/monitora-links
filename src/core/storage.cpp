@@ -29,17 +29,21 @@ bool initFS() {
 //=============================================================================
 
 void resetConfig() {
+   DBG("Resetando FILE_CONFIG...\n");
    LittleFS.remove(FILE_CONFIG);
    createDefaultConfig();
 }
 
 void resetRuntime() {
+   DBG("Resetando FILE_RUNTIME...\n");
    LittleFS.remove(FILE_RUNTIME);
    createDefaultRuntime();
 }
 
 void resetEvents() {
+   DBG("Resetando FILE_EVENTS...\n");
    LittleFS.remove(FILE_EVENTS);
+
    createDefaultEvents();
 }
 
@@ -55,7 +59,7 @@ void createDefaultConfig()
    gConfig.notification.quietStart = QUIET_HOURS_START_DEFAULT;
    gConfig.notification.quietEnd = QUIET_HOURS_END_DEFAULT;
    gConfig.notification.ledMode = LED_MODE_DEFAULT;
-
+   gConfig.saveCount++;
    saveStorage(FILE_CONFIG, gConfig);
 }
 
@@ -68,7 +72,7 @@ void createDefaultRuntime() {
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
       gRuntime.links[i].status = LINK_ONLINE;
    }
-
+   gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
 }
 
@@ -77,6 +81,6 @@ void createDefaultEvents() {
 
    gEvents.header.magic = EVENTS_MAGIC;
    gEvents.header.version = EVENTS_VERSION;
-
+   gEvents.saveCount++;
    saveStorage(FILE_EVENTS, gEvents);
 }

@@ -32,10 +32,28 @@ void appendEvent(const Event &evento) {
    } else {
       gEvents.firstEventId = (gEvents.firstEventId + 1) % MAX_EVENTS;
    }
-
-   if (saveStorage(FILE_EVENTS, gEvents)) {
+   gEvents.saveCount++;
+   bool saved = saveStorage(FILE_EVENTS, gEvents);
+   if (saved) {
       DBG("Evento gravado. Total: %u\n", gEvents.eventCounter);
    } else {
+      gEvents.saveCount--;
       DBG("ERRO gravando historico de eventos.\n");
    }
+}
+
+uint32_t reserveEventId(bool persist) {
+
+   gEvents.lastEventId++;
+
+   if (persist) {
+      gEvents.saveCount++;
+
+      if (!saveStorage(FILE_EVENTS, gEvents)) {
+         gEvents.saveCount--;
+         DBG("ERRO persistindo ID do evento.\n");
+      }
+   }
+
+   return gEvents.lastEventId;
 }

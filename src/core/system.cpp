@@ -57,7 +57,7 @@ void initSystem() {
       gRuntime.bootCount++;
       break;
    }
-
+   gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
 }
 

@@ -146,11 +146,13 @@ CommandResult cmdNotify(const String &args) {
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
       gConfig.notification.enabled = true;
+      gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\n🔔 Notificações ATIVADAS";
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
       gConfig.notification.enabled = false;
+      gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\n🔕 Notificações DESATIVADAS";
 
@@ -180,11 +182,13 @@ CommandResult cmdQuiet(const String &args) {
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
       gConfig.notification.quietEnabled = true;
+      gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\n🔔 Período quieto ATIVADO\n" + formatTime(gConfig.notification.quietStart) + " - " + formatTime(gConfig.notification.quietEnd);
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
       gConfig.notification.quietEnabled = false;
+      gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\n🔕 Período quieto DESATIVADO";
 
@@ -195,6 +199,7 @@ CommandResult cmdQuiet(const String &args) {
          gConfig.notification.quietStart = min1;
          gConfig.notification.quietEnd = min2;
          gConfig.notification.quietEnabled = true;
+         gConfig.saveCount++;
          saveStorage(FILE_CONFIG, gConfig);
          result.message =
              "🔔 Período quieto:\nREDEFINIDO e ATIVADO\n" + formatTime(gConfig.notification.quietStart) + " - " + formatTime(gConfig.notification.quietEnd);
@@ -222,16 +227,19 @@ CommandResult cmdLed(const String &args) {
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
       gConfig.notification.ledMode = LED_MODE_OFF;
+      gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
-      result.message = "\nAtividade dos leds:\n⚪ DESATIVADA";
+      result.message = "\nAtividade do led:\n⚪ DESATIVADA";
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
       gConfig.notification.ledMode = LED_MODE_ON;
+      gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
-      result.message = "\nAtividade dos leds:\n🔵 ATIVADA";
+      result.message = "\nAtividade do led:\n🔵 ATIVADA";
 
    } else if (totArgs == 1 && (arg1.equalsIgnoreCase("q") || arg1.equalsIgnoreCase("quiet"))) {
       gConfig.notification.ledMode = LED_MODE_QUIET;
+      gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\nAtividade do led:\n⚪🔵 DESATIVADA no PQ";
 
@@ -264,6 +272,7 @@ void doReboot() {
 
    gRuntime.bootReason = BOOT_AFTER_REBOOT_COMMAND;
    gRuntime.rebootStartTime = now();
+   gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
 
    ESP.restart();

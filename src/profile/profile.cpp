@@ -49,25 +49,33 @@ const Perfil *gPerfil = nullptr;
 
 const Perfil *detectProfile() {
    int total = WiFi.scanNetworks();
+    
+   // DBG("Detectando perfil. Total de redes encontradas: %d\n", total);
+   // for (int i = 0; i < total; i++) {
+   //    DBG("Rede %d: %s\n", i + 1, WiFi.SSID(i).c_str());
+   // }
 
    for (uint8_t p = 0; p < numPerfis; p++) {
-      bool perfilEncontrado = true;
+      bool perfilEncontrado = false;
 
       for (uint8_t s = 0; s < perfis[p].numLinks; s++) {
-         if (!perfis[p].links[s].identificaLocal)
+         // DBG("Verificando perfil %s, link %s. Identifica local: %s\n", perfis[p].nome, perfis[p].links[s].ssid, perfis[p].links[s].identificaLocal ? "SIM" : "NÃO"   );
+         if (!perfis[p].links[s].identificaLocal){
+            // DBG("Link não identifica local: %s\n", perfis[p].links[s].ssid);
             continue;
+         }
 
-         bool encontrou = false;
+         DBG("Link identifica local: %s. Vai verificar se está disponível...\n", perfis[p].links[s].ssid);
 
          for (int i = 0; i < total; i++) {
             if (WiFi.SSID(i) == perfis[p].links[s].ssid) {
-               encontrou = true;
+               // DBG("Sinal encontrado: %s\n", WiFi.SSID(i).c_str());
+               perfilEncontrado = true;
                break;
             }
          }
 
-         if (!encontrou) {
-            perfilEncontrado = false;
+         if (perfilEncontrado) {
             break;
          }
       }

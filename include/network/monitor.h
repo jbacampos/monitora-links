@@ -3,7 +3,7 @@
 
 #include "core/types.h"
 
-void processLink(LinkState *state, LinkId link, LinkStatus current,
+void processLinkState(LinkState *state, LinkId link, LinkStatus current,
                  int16_t rssi);
 
 #endif

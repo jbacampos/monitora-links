@@ -2,6 +2,7 @@
 #include "config/platform.h"
 #include "core/storage.h"
 #include "core/system.h"
+#include "core/tasks.h"
 #include "core/types.h"
 #include "hardware/led.h"
 #include "network/monitor.h"
@@ -21,13 +22,27 @@ constexpr uint32_t TELEGRAM_GET_UPDATES_INTERVAL = 5000; // 1 segundo
 void setup() {
 
    Serial.begin(115200);
-   delay(6000);
+
+   ledInit();
+   ledBusy();
 
 #ifdef ESP32
+   initLedTask();     // começa imediatamente a sequência visual
    WiFi.onEvent(onWiFiEvent);
 #endif
 
+#if DEV_MODE  
+   delay(5000);
+#endif
+
+   String msg = "\n==========================\n";
+   msg += "Sistema iniciado\n";
+   msg += "==========================\n";
+
+   DBG("%s", msg.c_str());
+
    gPerfil = detectProfile();
+
    if (gPerfil == nullptr) {
       DBG("Local desconhecido.\n");
       while (true)
@@ -39,41 +54,49 @@ void setup() {
          syncClock();
          break;
       }
-      DBG("Falha na conexão Wi-Fi inicial para sincronizar relógio. Tentando novamente em 5 segundos...\n");
+
+      DBG("Falha na conexão Wi-Fi inicial para sincronizar relógio. "
+          "Tentando novamente em 5 segundos...\n");
+
       delay(5000);
    }
 
    initSystem();
-   ledsInit();
+   ledSystemReady();
 
-   String msg = "\n==========================\n";
-   msg += "Sistema iniciado\n";
-   msg += "==========================\n";
-
-   DBG(msg.c_str());
+#ifdef ESP32
+   DBG("setup() executando no core %d\n", xPortGetCoreID());
+#endif
 
    onBoot();
 
    DBG("\nPerfil selecionado: %s\n", gPerfil->nome);
    DBG("Número de links: %u\n", gPerfil->numLinks);
+
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
       DBG("Link %u: %s\n", i + 1, gPerfil->links[i].nome);
    }
 
-   DBG("%s", buildSystemSummary().c_str());
-   DBG("%s", buildStatus().c_str());
-   DBG("%s", buildLog(10).c_str());
-   DBG("%s", buildStatistics(5).c_str());
+//    // ******************************************
+//    // Para listar detalhes do sistema no início:
+//    // ******************************************
+//    // DBG("%s", buildSystemSummary().c_str());
+//    // DBG("%s", buildStatus().c_str());
+//    // DBG("%s", buildLog(10).c_str());
+//    // DBG("%s", buildStatistics(5).c_str());
 
+   // ******************************************
    // Somente para apagar um arquivo:
+   // ******************************************
    // resetConfig();
    // resetRuntime();
    // resetEvents();
+
 }
 
 void loop() {
 
-   ledsBeginCycle();
+   ledBeginCycle();
    int16_t rssi;
    LinkStatus status[gPerfil->numLinks];
    TelegramUpdate upd;
@@ -81,14 +104,19 @@ void loop() {
    uint32_t proximoGetUpdates = millis();
 
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
-      ledsUpdate();
+#ifdef ESP8266
+      ledUpdate();
+#endif
       DBG("\n=== %s ===\n", gPerfil->links[i].nome);
 
       uint8_t retries = (gRuntime.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
       status[i] = testConnection(gPerfil->links[i].ssid, gPerfil->links[i].senha, &rssi, retries);
-
+      DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
       if (status[i] == LINK_WIFI_FAIL) {
          gRuntime.links[i].wifiFailCycles++;
+         
+         DBG("LINK_WIFI_FAIL no ciclo %d. Máximo de ciclos ignorados = %d\n", gRuntime.links[i].wifiFailCycles, WIFI_FAIL_CYCLES);
+
          if (gRuntime.links[i].wifiFailCycles < WIFI_FAIL_CYCLES) {
             DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", gRuntime.links[i].wifiFailCycles, WIFI_FAIL_CYCLES);
             continue;   // não chama processLink()
@@ -98,7 +126,7 @@ void loop() {
          gRuntime.links[i].wifiFailCycles = 0;
       }
 
-      processLink(&gRuntime.links[i], i, status[i], rssi);
+      processLinkState(&gRuntime.links[i], i, status[i], rssi);
 
       // Verifica se existe um link que caiu durante
       // o horário de silêncio e gera a notificação
@@ -132,6 +160,7 @@ void loop() {
             DBG("update recebido = %u - %s\n", upd.updateId, upd.text.c_str());
 
             gRuntime.telegramUpdateId = upd.updateId;
+            gRuntime.saveCount++;
             saveStorage(FILE_RUNTIME, gRuntime);
 
             if (!isAuthorizedChat(upd.chatId)) {
@@ -177,6 +206,7 @@ void loop() {
    // DBG("\nLinks online: %u/%u\n", online, gPerfil->numLinks);
 
    LedStatus ledStatus;
+   DBG("\nCiclo %lu concluído. Links on-line: %u/%u\n", gCycleCount + 1, online, gPerfil->numLinks);
    if (online == gPerfil->numLinks)
       ledStatus = LED_ALL_UP;
    else if (online == 0)
@@ -196,3 +226,67 @@ void loop() {
    delay(LED_STATUS_HOLD_MS);
    goToSleep(300); // Desabilitado enquanto não for necessário
 }
+
+
+// void setup_antigo() {
+
+//    Serial.begin(115200);
+//    delay(6000);
+
+
+//    String msg = "\n==========================\n";
+//    msg += "Sistema iniciado\n";
+//    msg += "==========================\n";
+
+//    DBG(msg.c_str());
+// #ifdef ESP32
+//    WiFi.onEvent(onWiFiEvent);
+// #endif
+
+//    gPerfil = detectProfile();
+//    if (gPerfil == nullptr) {
+//       DBG("Local desconhecido.\n");
+//       while (true)
+//          delay(1000);
+//    }
+
+//    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+//       if (connectWifi(gPerfil->links[i].ssid, gPerfil->links[i].senha)) {
+//          syncClock();
+//          break;
+//       }
+//       DBG("Falha na conexão Wi-Fi inicial para sincronizar relógio. Tentando novamente em 5 segundos...\n");
+//       delay(5000);
+//    }
+
+//    initSystem();
+//    ledInit();
+
+// #ifdef ESP32
+//    initLedTask();
+//    DBG("setup() executando no core %d\n", xPortGetCoreID());
+// #endif
+
+//    onBoot();
+
+//    DBG("\nPerfil selecionado: %s\n", gPerfil->nome);
+//    DBG("Número de links: %u\n", gPerfil->numLinks);
+//    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+//       DBG("Link %u: %s\n", i + 1, gPerfil->links[i].nome);
+//    }
+
+//    // ******************************************
+//    // Para listar detalhes do sistema no início:
+//    // ******************************************
+//    // DBG("%s", buildSystemSummary().c_str());
+//    // DBG("%s", buildStatus().c_str());
+//    // DBG("%s", buildLog(10).c_str());
+//    // DBG("%s", buildStatistics(5).c_str());
+
+//    // ******************************************
+//    // Somente para apagar um arquivo:
+//    // ******************************************
+//    // resetConfig();
+//    // resetRuntime();
+//    // resetEvents();
+// }

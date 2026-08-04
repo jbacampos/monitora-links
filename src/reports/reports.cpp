@@ -58,6 +58,66 @@ String buildStatus() {
 // Histórico
 //=============================================================================
 
+// String buildLog_antigo (uint16_t maxEventos) {
+//    String msg = "\n==========================\n";
+//    msg += "Eventos - últimos ";
+//    msg += String(maxEventos);
+//    msg += "\n==========================\n";
+
+//    uint16_t total = getEventCount();
+
+//    if (total == 0)
+//       return msg + "Nenhum evento.\n";
+
+//    uint16_t inicio = (total > maxEventos) ? total - maxEventos : 0;
+
+//    for (uint16_t i = inicio; i < total; i++) {
+
+//       const Event* ev = getEvent(i);
+//       if (ev == nullptr) {
+//          msg += "\nERRO: getEvent retornou nullptr\n";
+//          continue;
+//       }
+//       const LinkConfig& cfg = gPerfil->links[ev->link];
+
+//       msg += "\n#";
+//       msg += String(ev->id);
+//       msg += " ";
+//       if (ev->tipo == EVENT_BOOT) {
+//          msg += "Monitor reiniciado";
+//       } else {
+//          msg += cfg.nome;
+//       }
+
+//       msg += "\n";
+
+//       msg += "Motivo : ";
+//       if (ev->tipo == EVENT_BOOT) {
+//          msg += bootReasonDescription(ev->bootReason);
+//       } else {
+//          msg += linkStatusDescription(ev->motivo);
+//       }
+//       msg += "\n";
+
+//       msg += "Inicio : ";
+
+//       if (ev->inicio != 0)
+//          msg += formatDateTime(ev->inicio, DATETIME_SHORT);
+//       else
+//          msg += "desconhecido";
+
+//       msg += "\n";
+
+//       msg += "Duracao: ";
+//       msg += formatDuration(ev->duracaoSeg);
+//       msg += "\n";
+//    }
+
+//    msg += "\n";
+
+//    return msg;
+// }
+
 String buildLog(uint16_t maxEventos) {
    String msg = "\n==========================\n";
    msg += "Eventos - últimos ";
@@ -69,55 +129,86 @@ String buildLog(uint16_t maxEventos) {
    if (total == 0)
       return msg + "Nenhum evento.\n";
 
-   uint16_t inicio = (total > maxEventos) ? total - maxEventos : 0;
+   uint16_t quantidade = min(total, maxEventos);
+
+   // Índices dos eventos que serão exibidos
+   uint16_t indices[MAX_EVENTS];
+
+   for (uint16_t i = 0; i < total; i++)
+      indices[i] = i;
+
+   // Ordena os índices pelo ID do evento
+   for (uint16_t i = 0; i < total - 1; i++) {
+      for (uint16_t j = i + 1; j < total; j++) {
+
+         const Event* a = getEvent(indices[i]);
+         const Event* b = getEvent(indices[j]);
+
+         if (a != nullptr && b != nullptr && a->id > b->id) {
+            uint16_t temp = indices[i];
+            indices[i] = indices[j];
+            indices[j] = temp;
+         }
+      }
+   }
+
+   // Depois da ordenação, os maiores IDs estão no final
+   uint16_t inicio = total - quantidade;
 
    for (uint16_t i = inicio; i < total; i++) {
 
-      const Event* ev = getEvent(i);
+      const Event* ev = getEvent(indices[i]);
+
       if (ev == nullptr) {
          msg += "\nERRO: getEvent retornou nullptr\n";
          continue;
       }
-      const LinkConfig& cfg = gPerfil->links[ev->link];
 
       msg += "\n#";
       msg += String(ev->id);
       msg += " ";
+
       if (ev->tipo == EVENT_BOOT) {
          msg += "Monitor reiniciado";
       } else {
+         const LinkConfig& cfg = gPerfil->links[ev->link];
          msg += cfg.nome;
       }
 
       msg += "\n";
 
       msg += "Motivo : ";
+
       if (ev->tipo == EVENT_BOOT) {
          msg += bootReasonDescription(ev->bootReason);
       } else {
          msg += linkStatusDescription(ev->motivo);
       }
+
       msg += "\n";
 
-      msg += "Inicio : ";
-
-      if (ev->inicio != 0)
+      if (ev->inicio != 0) {
+         msg += "Inicio      :  ";
          msg += formatDateTime(ev->inicio, DATETIME_SHORT);
-      else
-         msg += "desconhecido";
+         msg += "\n";
 
-      msg += "\n";
+         msg += "Duracao :  ";
+         msg += formatDuration(ev->duracaoSeg);
+         msg += "\n";
 
-      msg += "Duracao: ";
-      msg += formatDuration(ev->duracaoSeg);
-      msg += "\n";
+      } else {
+         msg += "Em         :  ";
+         msg += formatDateTime(ev->fim, DATETIME_SHORT);
+         msg += "\n";
+
+      }
+
    }
 
    msg += "\n";
 
    return msg;
 }
-
 //=============================================================================
 // Notificações e led
 //=============================================================================
@@ -269,7 +360,7 @@ String buildSystemSummary() {
    msg += ("\n  Livre p/ OTA:        ");
    msg += prettySize(ESP.getFreeSketchSpace());
    msg += ("\n  Gravações:            ");
-   msg += formatNumber(gRuntime.saveCount).c_str();
+   msg += formatNumber(gRuntime.saveCount + gEvents.saveCount + gConfig.saveCount).c_str();
    msg += ("\n");
 
    return msg;

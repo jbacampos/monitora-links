@@ -159,8 +159,10 @@ void clearPendingNotifications() {
       }
    }
 
-   if (mudou)
+   if (mudou) {
+      gRuntime.saveCount++;
       saveStorage(FILE_RUNTIME, gRuntime);
+   }
 }
 
 void sendPendingNotifications() {
@@ -184,6 +186,7 @@ void sendPendingNotifications() {
 
       if (telegramSendMessage(msg)) {
          n.pending = false;
+         gRuntime.saveCount++;
          saveStorage(FILE_RUNTIME, gRuntime);
       } else {
          DBG("Falha ao enviar notificacao #%u\n",
@@ -284,7 +287,9 @@ void checkNotificationPolicy() {
       ls->downNotificationSent = true;
    }
 
-   if (modificou)
+   if (modificou) {
+      gRuntime.saveCount++;
       saveStorage(FILE_RUNTIME, gRuntime);
+   }
    
 }

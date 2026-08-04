@@ -48,7 +48,7 @@ constexpr uint8_t LED_GREEN_PIN = 2;
 constexpr uint8_t LED_BLUE_PIN  = 4;
 #endif
 
-constexpr uint16_t LED_BLINK_PERIOD_MS = 300;
+constexpr uint16_t LED_BLINK_PERIOD_MS = 200;
 constexpr uint16_t LED_STATUS_HOLD_MS = 5000;
 
 

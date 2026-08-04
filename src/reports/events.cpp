@@ -15,8 +15,8 @@
 
 void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo, int16_t rssi) {
 
-   gEvents.lastEventId++;
-   state->eventoAtual = gEvents.lastEventId;
+   state->eventoAtual = reserveEventId(true);   
+
    if (clockIsValid())
       state->inicioFalha = now();
    else
@@ -113,8 +113,7 @@ void onBoot() {
    DBG("Duracao   : %s\n", formatDuration(duracao).c_str());
    
    Event ev = {};
-   gEvents.lastEventId++;
-   ev.id = gEvents.lastEventId;
+   ev.id = reserveEventId(false);
    ev.link = LINK_SYSTEM;
    ev.bootReason = gRuntime.bootReason;
    ev.inicio = inicio;
@@ -129,7 +128,7 @@ void onBoot() {
    n.link = LINK_SYSTEM;
    n.bootReason = gRuntime.bootReason;
    n.tipo = NOTIFY_BOOT;
-   n.evento = gEvents.lastEventId;
+   n.evento = ev.id;
    n.inicio = inicio;
    n.fim = fim;
    n.duracao = duracao;
@@ -139,6 +138,7 @@ void onBoot() {
 
    gRuntime.bootReason = BOOT_POWERON;
    gRuntime.rebootStartTime = now();
+   gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
 
    

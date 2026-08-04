@@ -60,15 +60,16 @@ bool connectWifi(const char *ssid, const char *password) {
    uint8_t cont = 1;
 
    while (WiFi.status() != WL_CONNECTED) {
-      DBG("Tentativa de conexão Wi-Fi %u: status = %d\n", cont, WiFi.status());
+      // DBG("Tentativa de conexão Wi-Fi %u: status = %d\n", cont, WiFi.status());
       cont++;
 
       if (wifiDisconnectReason != 0 && wifiDisconnectReason != 8) {
          DBG("Falha Wi-Fi. reason = %d\n", wifiDisconnectReason);
          return false;
       }
-
-      ledsUpdate();
+#ifdef ESP8266
+      ledUpdate();
+#endif
       delay(RETRY_DELAY_MS);
 
       if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
@@ -108,7 +109,11 @@ LinkStatus testConnection(const char *ssid, const char *password, int16_t *rssi,
    LinkStatus status = LINK_WIFI_FAIL;
    for (uint8_t tentativa = 0; tentativa < retries; tentativa++) {
       if (!connectWifi(ssid, password)) {
+#ifdef ESP32         
+         ledFlash(LED_RED, 150);         
+#else
          setColor(LED_RED);
+#endif
          status = LINK_WIFI_FAIL;
          DBG("%s link fail. Tentativa %d\n", ssid, tentativa + 1);
       } else {
@@ -116,10 +121,18 @@ LinkStatus testConnection(const char *ssid, const char *password, int16_t *rssi,
          bool internetOk = testInternet();
 
          if (internetOk) {
+#ifdef ESP32         
+            ledFlash(LED_GREEN, 150);         
+#else
             setColor(LED_GREEN);
+#endif
             status = LINK_ONLINE;
          } else {
+#ifdef ESP32         
+            ledFlash(LED_RED, 150);         
+#else
             setColor(LED_RED);
+#endif
             status = LINK_INTERNET_FAIL;
          }
 

@@ -5,7 +5,7 @@
 #include "network/ntp.h"
 #include "core/types.h"
 
-void processLink(LinkState *state, LinkId link, LinkStatus current, int16_t rssi) {
+void processLinkState(LinkState *state, LinkId link, LinkStatus current, int16_t rssi) {
 
    DBG("Status : %s -> %s", linkStatusDescription(state->status),
        linkStatusDescription(current));

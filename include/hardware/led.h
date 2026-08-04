@@ -21,14 +21,19 @@ enum LedColor : uint8_t {
 
 void setColor(LedColor color);
 
-bool ledsEnabled();
+bool ledEnabled();
 
-void ledsInit();
+void ledInit();
 
-void ledsBeginCycle();
+void ledBeginCycle();
 
 void ledEndCycle(LedStatus status);
 
-void ledsUpdate();
+void ledSystemReady();
 
+void ledUpdate();
+
+void ledFlash(LedColor color, uint32_t durationMs);
+void ledBusy();
+void ledIdle();
 #endif

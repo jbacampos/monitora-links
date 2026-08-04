@@ -14,18 +14,39 @@ static LedStatus gStatus = LED_ALL_UP;
 static bool blinkOn = false;
 static uint32_t lastBlink = 0;
 
+static LedColor flashColor = LED_BLANK;
+static uint32_t flashUntil = 0;
+
 // -----------------------------------------------------------------------------
 // Funções auxiliares
 // -----------------------------------------------------------------------------
 
+void ledFlash(LedColor color, uint32_t durationMs) {
+   flashColor = color;
+   flashUntil = millis() + durationMs;
+}
+
+void ledBusy() {
+   gMode = LED_BUSY;
+   blinkOn = false;
+   lastBlink = 0;
+}
+
+void ledIdle() {
+   gMode = LED_IDLE;
+   blinkOn = false;
+}
+
+static bool systemReady = false;
+
+void ledSystemReady() {
+   systemReady = true;
+}
 void setColor(LedColor color) {
 
    uint16_t r = 0;
    uint16_t g = 0;
    uint16_t b = 0;
-
-   if (!ledsEnabled())
-      color = LED_BLANK;
 
    switch (color) {
    case LED_GREEN:
@@ -86,7 +107,8 @@ static void showStatus() {
    }
 }
 
-bool ledsEnabled() {
+
+bool ledEnabled() {
 
    switch (gConfig.notification.ledMode) {
 
@@ -107,7 +129,7 @@ bool ledsEnabled() {
 // Interface pública
 // -----------------------------------------------------------------------------
 
-void ledsInit() {
+void ledInit() {
 
    pinMode(LED_RED_PIN, OUTPUT);
    pinMode(LED_GREEN_PIN, OUTPUT);
@@ -115,56 +137,78 @@ void ledsInit() {
 
    setColor(LED_BLANK);
 
-   // Autoteste
-   int16_t espera = 250;
-   setColor(LED_BLUE);
-   delay(espera);
-   setColor(LED_GREEN);
-   delay(espera);
-   setColor(LED_RED);
-   delay(espera);
-   setColor(LED_YELLOW);
-   delay(espera);
-   setColor(LED_MAGENTA);
-   delay(espera);
-   setColor(LED_CYAN);
-   delay(espera);
-   setColor(LED_WHITE);
-   delay(espera);
+#ifdef ESP8266   
 
+// Autoteste
+   int16_t espera = 250;
+   int8_t i;
+   for (int i = 0; i < 5; i++) {
+      setColor(LED_BLUE);
+      delay(espera);
+   }
+   for (int i = 0; i < 5; i++) {
+      setColor(LED_GREEN);
+      delay(espera);
+   }
+   for (int i = 0; i < 5; i++) {
+      setColor(LED_YELLOW);
+      delay(espera);
+   }
+   for (int i = 0; i < 5; i++) {
+      setColor(LED_RED);
+      delay(espera);
+   }
+   
    setColor(LED_BLANK);
+
+#endif
 }
 
-void ledsBeginCycle() {
+void ledBeginCycle() {
 
    gMode = LED_BUSY;
    blinkOn = true;
-   lastBlink = millis();
-   setColor(LED_BLUE);
+   lastBlink = 0;
 }
 
 void ledEndCycle(LedStatus status) {
 
    gStatus = status;
    gMode = LED_IDLE;
-
-   showStatus();
 }
 
-void ledsUpdate() {
+void ledUpdate() {
 
-   if (gMode != LED_BUSY)
+   if (systemReady && !ledEnabled()) {
+      blinkOn = false;
+      setColor(LED_BLANK);
+      return;
+   }
+
+   uint32_t now = millis();
+
+   // Flash temporário tem prioridade
+   if (flashUntil != 0) {
+      if ((int32_t)(flashUntil - now) > 0) {
+         setColor(flashColor);
+         return;
+      }
+
+      flashUntil = 0;
+   }
+
+   // Ciclo terminado: mostra estado dos links
+   if (gMode == LED_IDLE) {
+      showStatus();
+      return;
+   }
+
+   // Ciclo em andamento: pisca azul
+   if (now - lastBlink < LED_BLINK_PERIOD_MS)
       return;
 
-   if (millis() - lastBlink < LED_BLINK_PERIOD_MS)
-      return;
-
-   lastBlink = millis();
+   lastBlink = now;
    blinkOn = !blinkOn;
 
-   if (blinkOn) {
-      setColor(LED_BLUE);
-   } else {
-      setColor(LED_BLANK);
-   }
+   setColor(blinkOn ? LED_BLUE : LED_BLANK);
 }
