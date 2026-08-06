@@ -6,7 +6,7 @@
 // Estado interno
 // -----------------------------------------------------------------------------
 
-enum LedActivity : uint8_t { LED_IDLE, LED_BUSY };
+enum LedActivity : uint8_t { LED_IDLE, LED_BUSY, LED_STARTUP };
 
 static LedActivity gMode = LED_IDLE;
 static LedStatus gStatus = LED_ALL_UP;
@@ -24,6 +24,12 @@ static uint32_t flashUntil = 0;
 void ledFlash(LedColor color, uint32_t durationMs) {
    flashColor = color;
    flashUntil = millis() + durationMs;
+}
+
+void ledStartup() {
+   gMode = LED_STARTUP;
+   blinkOn = false;
+   lastBlink = 0;
 }
 
 void ledBusy() {
@@ -56,29 +62,24 @@ void setColor(LedColor color) {
       b = 50; // Azul menos intenso
       break;
    case LED_YELLOW:
-   #ifdef ESP32
       r = 600;
       g = 15; // Ajustado visualmente
-   #else // ESP8266:
-      r = 500;
-      g = 30; // Ajustado visualmente
-   #endif
       break;
    case LED_RED:
-      r = 1023;
+      r = 700;
       break;
    case LED_MAGENTA:
-      r = 500;
-      b = 30;
+      r = 250;
+      b = 15;
       break;
    case LED_CYAN:
       g = 100;
       b = 50;
       break;
    case LED_WHITE:
-      r = 500;
-      g = 200;
-      b = 200;
+      r = 125;
+      g = 50;
+      b = 50;
       break;
 
    case LED_BLANK:
@@ -209,6 +210,8 @@ void ledUpdate() {
 
    lastBlink = now;
    blinkOn = !blinkOn;
-
-   setColor(blinkOn ? LED_BLUE : LED_BLANK);
+   if (gMode == LED_STARTUP)
+      setColor(blinkOn ? LED_WHITE : LED_BLANK);
+   else
+      setColor(blinkOn ? LED_BLUE : LED_BLANK);
 }

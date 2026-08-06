@@ -107,18 +107,3 @@ BootReason getBootReason() {
 #endif
 
 }
-
-
-
-
-//=============================================================================
-// Energia
-//=============================================================================
-
-void goToSleep(uint32_t segundos) {
-// Reservada para possível uso no futuro
-#if ENABLE_SLEEP
-   DBG("Entrando em Deep Sleep\n");
-   ESP.deepSleep(segundos * 1000000ULL);
-#endif
-}

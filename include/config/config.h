@@ -103,6 +103,7 @@ constexpr char FILE_EVENTS[]  = "/events.bin";
 #define TELEGRAM_HOST "api.telegram.org"
 #define TELEGRAM_PORT 443
 #define MAX_PENDING_NOTIFICATIONS 4
+constexpr uint32_t TELEGRAM_GET_UPDATES_INTERVAL = 5000; 
 
 /*********************************************************************
  * MONITORAMENTO
@@ -112,6 +113,7 @@ constexpr uint8_t LINK_TEST_RETRIES = 3;
 constexpr uint8_t WIFI_FAIL_CYCLES = 3;
 constexpr uint16_t RETRY_DELAY_MS = 300;
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 2000;
+
 
 /*********************************************************************
  * DEBUG

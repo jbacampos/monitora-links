@@ -17,22 +17,27 @@
 #include "reports/stats.h"
 
 constexpr uint8_t MAX_UPDATES_PER_CYCLE = 10;
-constexpr uint32_t TELEGRAM_GET_UPDATES_INTERVAL = 5000; // 1 segundo
 
 void setup() {
 
    Serial.begin(115200);
 
    ledInit();
-   ledBusy();
+   ledStartup();
+
+esp_reset_reason_t reason = esp_reset_reason();
+DBG("ESP reset reason: %d\n", reason);
 
 #ifdef ESP32
    initLedTask();     // começa imediatamente a sequência visual
    WiFi.onEvent(onWiFiEvent);
+   initTelegramTask();
+
+   DBG("setup() executando no core %d\n", xPortGetCoreID());
 #endif
 
 #if DEV_MODE  
-   delay(5000);
+   // delay(5000);
 #endif
 
    String msg = "\n==========================\n";
@@ -96,12 +101,18 @@ void setup() {
 
 void loop() {
 
+    // A conexão mantida entre ciclos pertenceu à janela de serviços.
+   // Encerra-a antes de iniciar os testes.
+#ifdef ESP32
+   closeServiceWindow();
+#endif   
+   disconnectWifi();
    ledBeginCycle();
    int16_t rssi;
    LinkStatus status[gPerfil->numLinks];
-   TelegramUpdate upd;
-   bool telegramChecked = false;
-   uint32_t proximoGetUpdates = millis();
+   // TelegramUpdate upd;
+   // bool telegramChecked = false;
+   // uint32_t proximoGetUpdates = millis();
 
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
 #ifdef ESP8266
@@ -136,63 +147,63 @@ void loop() {
       if (hasPendingNotifications())
          sendPendingNotifications();
 
-      uint32_t t0 = millis();
-      uint32_t t1 = millis();
-      if (!telegramChecked && status[i] == LINK_ONLINE) {
-         // DBG("telegramUpdateId = %lu\n", gRuntime.telegramUpdateId);
-         // DBG("Consultando Telegram...\n");
-         for (uint8_t i = 0; i < MAX_UPDATES_PER_CYCLE; i++) {
+      // uint32_t t0 = millis();
+      // uint32_t t1 = millis();
+      // if (!telegramChecked && status[i] == LINK_ONLINE) {
+      //    // DBG("telegramUpdateId = %lu\n", gRuntime.telegramUpdateId);
+      //    // DBG("Consultando Telegram...\n");
+      //    for (uint8_t i = 0; i < MAX_UPDATES_PER_CYCLE; i++) {
 
-            if (millis() < proximoGetUpdates) {
-               break;
-            }
-            proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
+      //       if (millis() < proximoGetUpdates) {
+      //          break;
+      //       }
+      //       proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
 
-            // DBG("Vai chamar telegramGetUpdates...\n");
-            // t0 = millis();
-            if (!telegramGetUpdates(&upd)) {
-               // DBG("Chamou telegramGetUpdates, resultado = false, tempo = %lu ms\n", millis() - t0);
-               DBG("Nenhum comando recebido via Telegram\n");
-               break;
-            }
-            telegramChecked = true;
-            // DBG("Chamou telegramGetUpdates, resultado = true, tempo = %lu ms\n", millis() - t0);
-            DBG("update recebido = %u - %s\n", upd.updateId, upd.text.c_str());
+      //       // DBG("Vai chamar telegramGetUpdates...\n");
+      //       // t0 = millis();
+      //       if (!telegramGetUpdates(&upd)) {
+      //          // DBG("Chamou telegramGetUpdates, resultado = false, tempo = %lu ms\n", millis() - t0);
+      //          DBG("Nenhum comando recebido via Telegram\n");
+      //          break;
+      //       }
+      //       telegramChecked = true;
+      //       // DBG("Chamou telegramGetUpdates, resultado = true, tempo = %lu ms\n", millis() - t0);
+      //       DBG("update recebido = %u - %s\n", upd.updateId, upd.text.c_str());
 
-            gRuntime.telegramUpdateId = upd.updateId;
-            gRuntime.saveCount++;
-            saveStorage(FILE_RUNTIME, gRuntime);
+      //       gRuntime.telegramUpdateId = upd.updateId;
+      //       gRuntime.saveCount++;
+      //       saveStorage(FILE_RUNTIME, gRuntime);
 
-            if (!isAuthorizedChat(upd.chatId)) {
-               telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
-               continue;
-            }
-            if (upd.text.isEmpty()) {
-               continue;
-            }
-            DBG("upd.text = %s\n", upd.text.c_str());
+      //       if (!isAuthorizedChat(upd.chatId)) {
+      //          telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
+      //          continue;
+      //       }
+      //       if (upd.text.isEmpty()) {
+      //          continue;
+      //       }
+      //       DBG("upd.text = %s\n", upd.text.c_str());
 
-            t0 = millis();
-            CommandResult cmdResult = telegramProcessCommand(upd.text);
-            DBG("Chamou telegramProcessCommand, resposta = %s, tempo = %lu ms\n", cmdResult.message.c_str(), millis() - t0);
-            if (!cmdResult.message.isEmpty()) {
-               t0 = millis();
-               DBG("Vai chamar telegramSendMessage...\n");
-               if (!telegramSendMessage(cmdResult.message)) {
-                  DBG("Chamou telegramSendMessage, resultado = false, tempo = %lu ms\n", millis() - t0);
-                  break;
-               }
-               DBG("Chamou telegramSendMessage, resultado = true, tempo = %lu ms\n", millis() - t0);
-            }
-            // DBG("Novo updateId = %lu\n", upd.updateId);
-            // DBG("updateId anterior = %lu\n", gRuntime.telegramUpdateId);
+      //       t0 = millis();
+      //       CommandResult cmdResult = telegramProcessCommand(upd.text);
+      //       DBG("Chamou telegramProcessCommand, resposta = %s, tempo = %lu ms\n", cmdResult.message.c_str(), millis() - t0);
+      //       if (!cmdResult.message.isEmpty()) {
+      //          t0 = millis();
+      //          DBG("Vai chamar telegramSendMessage...\n");
+      //          if (!telegramSendMessage(cmdResult.message)) {
+      //             DBG("Chamou telegramSendMessage, resultado = false, tempo = %lu ms\n", millis() - t0);
+      //             break;
+      //          }
+      //          DBG("Chamou telegramSendMessage, resultado = true, tempo = %lu ms\n", millis() - t0);
+      //       }
+      //       // DBG("Novo updateId = %lu\n", upd.updateId);
+      //       // DBG("updateId anterior = %lu\n", gRuntime.telegramUpdateId);
 
-            if (cmdResult.deferredFunction != nullptr) {
-               DBG("Tem deferredFunction, vai executá-la:\n");
-               cmdResult.deferredFunction();
-            }
-         }
-      }
+      //       if (cmdResult.deferredFunction != nullptr) {
+      //          DBG("Tem deferredFunction, vai executá-la:\n");
+      //          cmdResult.deferredFunction();
+      //       }
+      //    }
+      // }
 
       disconnectWifi();
    }
@@ -204,6 +215,14 @@ void loop() {
          online++;
 
    // DBG("\nLinks online: %u/%u\n", online, gPerfil->numLinks);
+
+   bool serviceConnection = false;
+
+   if (online > 0)
+      serviceConnection = connectToOnlineLink(status);
+
+   if (serviceConnection)
+      openServiceWindow();
 
    LedStatus ledStatus;
    DBG("\nCiclo %lu concluído. Links on-line: %u/%u\n", gCycleCount + 1, online, gPerfil->numLinks);
@@ -224,69 +243,6 @@ void loop() {
    // DBG("\nledStatus: %s\n", ledStatus == LED_ALL_UP ? "TODOS OS LINKS ON-LINE" : (ledStatus == LED_ALL_DOWN ? "TODOS OS LINKS OFF-LINE" : "ALGUNS LINKS OFF-LINE"));
    DBG("\nVai dormir por %u milissegundos...\n", LED_STATUS_HOLD_MS);
    delay(LED_STATUS_HOLD_MS);
-   goToSleep(300); // Desabilitado enquanto não for necessário
+
 }
 
-
-// void setup_antigo() {
-
-//    Serial.begin(115200);
-//    delay(6000);
-
-
-//    String msg = "\n==========================\n";
-//    msg += "Sistema iniciado\n";
-//    msg += "==========================\n";
-
-//    DBG(msg.c_str());
-// #ifdef ESP32
-//    WiFi.onEvent(onWiFiEvent);
-// #endif
-
-//    gPerfil = detectProfile();
-//    if (gPerfil == nullptr) {
-//       DBG("Local desconhecido.\n");
-//       while (true)
-//          delay(1000);
-//    }
-
-//    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
-//       if (connectWifi(gPerfil->links[i].ssid, gPerfil->links[i].senha)) {
-//          syncClock();
-//          break;
-//       }
-//       DBG("Falha na conexão Wi-Fi inicial para sincronizar relógio. Tentando novamente em 5 segundos...\n");
-//       delay(5000);
-//    }
-
-//    initSystem();
-//    ledInit();
-
-// #ifdef ESP32
-//    initLedTask();
-//    DBG("setup() executando no core %d\n", xPortGetCoreID());
-// #endif
-
-//    onBoot();
-
-//    DBG("\nPerfil selecionado: %s\n", gPerfil->nome);
-//    DBG("Número de links: %u\n", gPerfil->numLinks);
-//    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
-//       DBG("Link %u: %s\n", i + 1, gPerfil->links[i].nome);
-//    }
-
-//    // ******************************************
-//    // Para listar detalhes do sistema no início:
-//    // ******************************************
-//    // DBG("%s", buildSystemSummary().c_str());
-//    // DBG("%s", buildStatus().c_str());
-//    // DBG("%s", buildLog(10).c_str());
-//    // DBG("%s", buildStatistics(5).c_str());
-
-//    // ******************************************
-//    // Somente para apagar um arquivo:
-//    // ******************************************
-//    // resetConfig();
-//    // resetRuntime();
-//    // resetEvents();
-// }

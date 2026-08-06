@@ -14,6 +14,9 @@ bool ssidFound(const char* ssid);
 
 void disconnectWifi();
 
+bool connectToOnlineLink(const LinkStatus status[]);
+
+
 void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info);
 
 //=============================================================================

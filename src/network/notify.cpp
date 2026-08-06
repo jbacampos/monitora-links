@@ -70,7 +70,10 @@ static String buildMessage(const PendingNotification &n) {
       DBG("Duração = %s\n", formatDuration(n.duracao).c_str());
 
       msg += EmojiReboot;
-      msg += " Monitor reiniciado\n\n";
+      if (n.bootReason == BOOT_POWERON)
+         msg += " Monitor religado\n\n";
+      else 
+         msg += " Monitor reiniciado\n\n";
 
       if (n.inicio) {
          msg += "Inicio      :  ";
@@ -183,7 +186,7 @@ void sendPendingNotifications() {
          continue;
 
       String msg = buildMessage(n);
-
+DBG("Enviando pendente slot=%u evento=#%u tipo=%u\n", i, n.evento, n.tipo);
       if (telegramSendMessage(msg)) {
          n.pending = false;
          gRuntime.saveCount++;
@@ -193,6 +196,7 @@ void sendPendingNotifications() {
              gRuntime.pendingNotifications[i].evento);
          break;
       }
+DBG("Pendente #%u marcado como enviado e salvo\n", n.evento);      
    }
 }
 

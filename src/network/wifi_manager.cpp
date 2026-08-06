@@ -100,6 +100,30 @@ void disconnectWifi() {
    // delay(500);
 }
 
+bool connectToOnlineLink(const LinkStatus status[]) {
+
+   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+
+      if (status[i] != LINK_ONLINE)
+         continue;
+
+      DBG("\nConectando ao link %s para serviços...\n",
+          gPerfil->links[i].nome);
+
+      if (connectWifi(gPerfil->links[i].ssid,
+                      gPerfil->links[i].senha)) {
+
+         DBG("Link %s disponível para serviços\n",
+             gPerfil->links[i].nome);
+
+         return true;
+      }
+   }
+
+   DBG("Nenhum link disponível para serviços\n");
+   return false;
+}
+
 //=============================================================================
 // Diagnóstico
 //=============================================================================
