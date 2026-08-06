@@ -10,6 +10,8 @@
 // Auxiliares
 //=============================================================================
 
+static SemaphoreHandle_t notificationMutex = nullptr;
+
 static String buildMessage(const PendingNotification &n) {
 
    String inicioTxt = (n.inicio != 0) ? formatDateTime(n.inicio, DATETIME_SHORT) : "desconhecido";
@@ -111,18 +113,42 @@ static String buildMessage(const PendingNotification &n) {
 //=============================================================================
 
 void queueNotification(const PendingNotification &n) {
+
+   if (notificationMutex == nullptr)
+      return;
+
+   if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
+      return;
+
    DBG("Adicionando notificacao #%u na fila\n", n.evento);
+
+   bool adicionou = false;
+
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
       if (!gRuntime.pendingNotifications[i].pending) {
          gRuntime.pendingNotifications[i] = n;
          gRuntime.pendingNotifications[i].pending = true;
-         return;
+         adicionou = true;
+         break;
       }
    }
 
-   DBG("Fila de notificações cheia.\n");
+   xSemaphoreGive(notificationMutex);
+
+   if (!adicionou)
+      DBG("Fila de notificacoes cheia.\n");
 }
 
+
+void initNotificationMutex() {
+   notificationMutex = xSemaphoreCreateMutex();
+
+   if (notificationMutex == nullptr) {
+      DBG("ERRO criando mutex de notificacoes\n");
+   } else {
+      DBG("Mutex de notificacoes criado\n");
+   }
+}
 //=============================================================================
 // Consulta
 //=============================================================================
@@ -153,6 +179,13 @@ uint8_t getPendingNotificationCount() {
 //=============================================================================
 
 void clearPendingNotifications() {
+
+   if (notificationMutex == nullptr)
+      return;
+
+   if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
+      return;
+
    bool mudou = false;
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
@@ -166,9 +199,12 @@ void clearPendingNotifications() {
       gRuntime.saveCount++;
       saveStorage(FILE_RUNTIME, gRuntime);
    }
+
+   xSemaphoreGive(notificationMutex);
 }
 
 void sendPendingNotifications() {
+
    if (WiFi.status() != WL_CONNECTED)
       return;
 
@@ -176,27 +212,48 @@ void sendPendingNotifications() {
       clearPendingNotifications();
       return;
    }
+
    if (inQuietHours())
       return;
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      PendingNotification &n = gRuntime.pendingNotifications[i];
 
-      if (!n.pending)
+      PendingNotification n;
+
+      if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
+         return;
+
+      if (!gRuntime.pendingNotifications[i].pending) {
+         xSemaphoreGive(notificationMutex);
          continue;
+      }
+
+      n = gRuntime.pendingNotifications[i];
+
+      xSemaphoreGive(notificationMutex);
 
       String msg = buildMessage(n);
-DBG("Enviando pendente slot=%u evento=#%u tipo=%u\n", i, n.evento, n.tipo);
+
       if (telegramSendMessage(msg)) {
-         n.pending = false;
-         gRuntime.saveCount++;
-         saveStorage(FILE_RUNTIME, gRuntime);
+
+         if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
+            return;
+
+         // Confirma que o slot ainda contém a mesma notificação.
+         if (gRuntime.pendingNotifications[i].pending &&
+             gRuntime.pendingNotifications[i].evento == n.evento) {
+
+            gRuntime.pendingNotifications[i].pending = false;
+            gRuntime.saveCount++;
+            saveStorage(FILE_RUNTIME, gRuntime);
+         }
+
+         xSemaphoreGive(notificationMutex);
+
       } else {
-         DBG("Falha ao enviar notificacao #%u\n",
-             gRuntime.pendingNotifications[i].evento);
+         DBG("Falha ao enviar notificacao #%u\n", n.evento);
          break;
       }
-DBG("Pendente #%u marcado como enviado e salvo\n", n.evento);      
    }
 }
 

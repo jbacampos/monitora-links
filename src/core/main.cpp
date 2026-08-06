@@ -29,6 +29,7 @@ esp_reset_reason_t reason = esp_reset_reason();
 DBG("ESP reset reason: %d\n", reason);
 
 #ifdef ESP32
+   initNotificationMutex();
    initLedTask();     // começa imediatamente a sequência visual
    WiFi.onEvent(onWiFiEvent);
    initTelegramTask();
@@ -144,8 +145,8 @@ void loop() {
       // quando sair dele:
       checkNotificationPolicy();
 
-      if (hasPendingNotifications())
-         sendPendingNotifications();
+      // if (hasPendingNotifications())
+      //    sendPendingNotifications();
 
       // uint32_t t0 = millis();
       // uint32_t t1 = millis();

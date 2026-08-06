@@ -14,6 +14,7 @@ void queueNotification(const PendingNotification &n);
 bool hasPendingNotifications();
 uint8_t getPendingNotificationCount();
 void sendPendingNotifications();
+void initNotificationMutex();
 
 //=============================================================================
 // Política de notificações

@@ -15,6 +15,7 @@ static TaskHandle_t ledTaskHandle = nullptr;
 static TaskHandle_t telegramTaskHandle = nullptr;
 
 static volatile bool serviceWindowOpen = false;
+static volatile bool telegramBusy = false;
 static void telegramTask(void* parameter);
 
 //=============================================================================
@@ -119,9 +120,17 @@ static void telegramTask(void* parameter) {
          continue;
       }
 
+      // A partir daqui, a task está usando a conexão.
+      telegramBusy = true;
+
+      // Envia primeiro as notificações pendentes
+      if (hasPendingNotifications())
+         sendPendingNotifications();
+
       proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
 
       if (!telegramGetUpdates(&upd)) {
+         telegramBusy = false;
          vTaskDelay(pdMS_TO_TICKS(50));
          continue;
       }
@@ -138,11 +147,15 @@ static void telegramTask(void* parameter) {
          telegramSendMessage(
             "⛔ Chat não autorizado.\nUse o MonitLinks"
          );
+
+         telegramBusy = false;
          continue;
       }
 
-      if (upd.text.isEmpty())
+      if (upd.text.isEmpty()) {
+         telegramBusy = false;
          continue;
+      }
 
       DBG("upd.text = %s\n", upd.text.c_str());
 
@@ -155,6 +168,8 @@ static void telegramTask(void* parameter) {
 
          if (!telegramSendMessage(cmdResult.message)) {
             DBG("Falha ao enviar resposta ao comando\n");
+
+            telegramBusy = false;
             continue;
          }
       }
@@ -163,6 +178,9 @@ static void telegramTask(void* parameter) {
          DBG("Executando deferredFunction\n");
          cmdResult.deferredFunction();
       }
+
+      // Só libera depois de terminar tudo, inclusive OTA.
+      telegramBusy = false;
    }
 }
 
@@ -171,8 +189,14 @@ void openServiceWindow() {
 }
 
 void closeServiceWindow() {
-   serviceWindowOpen = false;
-}
 
+   // Impede que a TelegramTask inicie uma nova operação.
+   serviceWindowOpen = false;
+
+   // Se ela já estava trabalhando, espera terminar.
+   while (telegramBusy) {
+      vTaskDelay(pdMS_TO_TICKS(10));
+   }
+}
 
 #endif
