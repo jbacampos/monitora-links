@@ -13,6 +13,7 @@
 
 static TaskHandle_t ledTaskHandle = nullptr;
 static TaskHandle_t telegramTaskHandle = nullptr;
+static SemaphoreHandle_t runtimeMutex = nullptr;
 
 static volatile bool serviceWindowOpen = false;
 static volatile bool telegramBusy = false;
@@ -139,9 +140,11 @@ static void telegramTask(void* parameter) {
           upd.updateId,
           upd.text.c_str());
 
-      gRuntime.telegramUpdateId = upd.updateId;
-      gRuntime.saveCount++;
-      saveStorage(FILE_RUNTIME, gRuntime);
+         lockRuntime();
+         gRuntime.telegramUpdateId = upd.updateId;
+         gRuntime.saveCount++;
+         saveStorage(FILE_RUNTIME, gRuntime);
+         unlockRuntime();
 
       if (!isAuthorizedChat(upd.chatId)) {
          telegramSendMessage(
@@ -199,4 +202,29 @@ void closeServiceWindow() {
    }
 }
 
+//=============================================================================
+// Runtime Mutex
+//=============================================================================
+
+void initRuntimeMutex() {
+
+   runtimeMutex = xSemaphoreCreateMutex();
+
+   if (runtimeMutex != nullptr)
+      DBG("Mutex do runtime criado\n");
+   else
+      DBG("ERRO ao criar mutex do runtime\n");
+}
+
+void lockRuntime() {
+
+   if (runtimeMutex != nullptr)
+      xSemaphoreTake(runtimeMutex, portMAX_DELAY);
+}
+
+void unlockRuntime() {
+
+   if (runtimeMutex != nullptr)
+      xSemaphoreGive(runtimeMutex);
+}
 #endif

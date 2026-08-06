@@ -25,21 +25,16 @@ void setup() {
    ledInit();
    ledStartup();
 
-esp_reset_reason_t reason = esp_reset_reason();
-DBG("ESP reset reason: %d\n", reason);
-
 #ifdef ESP32
-   initNotificationMutex();
    initLedTask();     // começa imediatamente a sequência visual
+   initNotificationMutex();
+   initRuntimeMutex();
    WiFi.onEvent(onWiFiEvent);
    initTelegramTask();
 
    DBG("setup() executando no core %d\n", xPortGetCoreID());
 #endif
 
-#if DEV_MODE  
-   // delay(5000);
-#endif
 
    String msg = "\n==========================\n";
    msg += "Sistema iniciado\n";
@@ -144,67 +139,6 @@ void loop() {
       // o horário de silêncio e gera a notificação
       // quando sair dele:
       checkNotificationPolicy();
-
-      // if (hasPendingNotifications())
-      //    sendPendingNotifications();
-
-      // uint32_t t0 = millis();
-      // uint32_t t1 = millis();
-      // if (!telegramChecked && status[i] == LINK_ONLINE) {
-      //    // DBG("telegramUpdateId = %lu\n", gRuntime.telegramUpdateId);
-      //    // DBG("Consultando Telegram...\n");
-      //    for (uint8_t i = 0; i < MAX_UPDATES_PER_CYCLE; i++) {
-
-      //       if (millis() < proximoGetUpdates) {
-      //          break;
-      //       }
-      //       proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
-
-      //       // DBG("Vai chamar telegramGetUpdates...\n");
-      //       // t0 = millis();
-      //       if (!telegramGetUpdates(&upd)) {
-      //          // DBG("Chamou telegramGetUpdates, resultado = false, tempo = %lu ms\n", millis() - t0);
-      //          DBG("Nenhum comando recebido via Telegram\n");
-      //          break;
-      //       }
-      //       telegramChecked = true;
-      //       // DBG("Chamou telegramGetUpdates, resultado = true, tempo = %lu ms\n", millis() - t0);
-      //       DBG("update recebido = %u - %s\n", upd.updateId, upd.text.c_str());
-
-      //       gRuntime.telegramUpdateId = upd.updateId;
-      //       gRuntime.saveCount++;
-      //       saveStorage(FILE_RUNTIME, gRuntime);
-
-      //       if (!isAuthorizedChat(upd.chatId)) {
-      //          telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
-      //          continue;
-      //       }
-      //       if (upd.text.isEmpty()) {
-      //          continue;
-      //       }
-      //       DBG("upd.text = %s\n", upd.text.c_str());
-
-      //       t0 = millis();
-      //       CommandResult cmdResult = telegramProcessCommand(upd.text);
-      //       DBG("Chamou telegramProcessCommand, resposta = %s, tempo = %lu ms\n", cmdResult.message.c_str(), millis() - t0);
-      //       if (!cmdResult.message.isEmpty()) {
-      //          t0 = millis();
-      //          DBG("Vai chamar telegramSendMessage...\n");
-      //          if (!telegramSendMessage(cmdResult.message)) {
-      //             DBG("Chamou telegramSendMessage, resultado = false, tempo = %lu ms\n", millis() - t0);
-      //             break;
-      //          }
-      //          DBG("Chamou telegramSendMessage, resultado = true, tempo = %lu ms\n", millis() - t0);
-      //       }
-      //       // DBG("Novo updateId = %lu\n", upd.updateId);
-      //       // DBG("updateId anterior = %lu\n", gRuntime.telegramUpdateId);
-
-      //       if (cmdResult.deferredFunction != nullptr) {
-      //          DBG("Tem deferredFunction, vai executá-la:\n");
-      //          cmdResult.deferredFunction();
-      //       }
-      //    }
-      // }
 
       disconnectWifi();
    }

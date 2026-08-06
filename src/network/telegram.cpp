@@ -74,7 +74,7 @@ CommandResult telegramProcessCommand(const String &text) {
          return result;
       }
    }
-   result.message = "Comando desconhecido.\nDigite /help.";
+   result.message = "Comando desconhecido:\n" + comando + "\nDigite /help";
    return result;
 }
 
