@@ -18,12 +18,18 @@ uint32_t getDowntime(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Event *ev = getEvent(i);
-      if (ev->link != link)
+      Event ev;
+
+      if (!getEvent(i, ev))
          continue;
-      if (ev->fim < limite)
+
+      if (ev.link != link)
          continue;
-      total += ev->duracaoSeg;
+
+      if (ev.fim < limite)
+         continue;
+         
+      total += ev.duracaoSeg;
    }
    return total;
 }
@@ -39,10 +45,12 @@ uint16_t getFailureCount(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Event *ev = getEvent(i);
-      if (ev->link != link)
+      Event ev;
+      if (!getEvent(i, ev))
          continue;
-      if (ev->fim < limite)
+      if (ev.link != link)
+         continue;
+      if (ev.fim < limite)
          continue;
       total++;
    }
@@ -61,15 +69,17 @@ uint32_t getLongestFailure(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Event *ev = getEvent(i);
-      if (ev->link != link)
+      Event ev;
+      if (!getEvent(i, ev))
          continue;
-      if (ev->inicio == 0)
+      if (ev.link != link)
          continue;
-      if (ev->inicio < limite)
+      if (ev.inicio == 0)
          continue;
-      if (ev->duracaoSeg > maior)
-         maior = ev->duracaoSeg;
+      if (ev.inicio < limite)
+         continue;
+      if (ev.duracaoSeg > maior)
+         maior = ev.duracaoSeg;
    }
 
    return maior;
@@ -86,15 +96,17 @@ uint32_t getAverageFailure(LinkId link, uint16_t dias) {
    uint16_t totalEventos = getEventCount();
 
    for (uint16_t i = 0; i < totalEventos; i++) {
-      const Event *ev = getEvent(i);
-      if (ev->link != link)
+      Event ev;
+      if (!getEvent(i, ev))
          continue;
-      if (ev->inicio == 0)
+      if (ev.link != link)
          continue;
-      if (ev->inicio < limite)
+      if (ev.inicio == 0)
+         continue;
+      if (ev.inicio < limite)
          continue;
       totalFalhas++;
-      totalTempo += ev->duracaoSeg;
+      totalTempo += ev.duracaoSeg;
    }
    return (totalFalhas == 0) ? 0 : totalTempo / totalFalhas;
 }

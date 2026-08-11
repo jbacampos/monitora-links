@@ -16,10 +16,6 @@ uint32_t gCycleCount = 0;
 void initSystem() {
    WiFi.persistent(false);
 
-#ifdef ESP8266
-   WiFi.setAutoConnect(false);
-#endif
-
    WiFi.setAutoReconnect(false);
 
    if (!initFS()) {
@@ -67,23 +63,6 @@ void initSystem() {
 
 BootReason getBootReason() {
 
-#ifdef ESP8266
-   rst_info *info = ESP.getResetInfoPtr();
-   switch (info->reason) {
-      case REASON_DEFAULT_RST:
-         return BOOT_POWERON;
-      case REASON_DEEP_SLEEP_AWAKE:
-         return BOOT_DEEPSLEEP;
-      case REASON_WDT_RST:
-      case REASON_SOFT_WDT_RST:
-         return BOOT_WATCHDOG;
-      case REASON_SOFT_RESTART:
-         return BOOT_SOFTWARE;
-      default:
-         return BOOT_UNKNOWN;
-   }
-
-#elif defined(ESP32)
    #include <esp_system.h>
    switch (esp_reset_reason()) {
       case ESP_RST_POWERON:
@@ -100,10 +79,5 @@ BootReason getBootReason() {
          return BOOT_UNKNOWN;
    }
 
-#else
-
-   return BOOT_UNKNOWN;
-
-#endif
 
 }

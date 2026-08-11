@@ -20,8 +20,6 @@ static bool testInternet() {
    return false;
 }
 
-#ifdef ESP32
-
 volatile int wifiDisconnectReason = 0;
 
 void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
@@ -29,8 +27,6 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
       wifiDisconnectReason = info.wifi_sta_disconnected.reason;
    }
 }
-
-#endif
 
 //=============================================================================
 // Conexão Wi-Fi
@@ -44,11 +40,7 @@ bool connectWifi(const char *ssid, const char *password) {
    WiFi.mode(WIFI_STA);
    WiFi.setAutoReconnect(false);
 
-#ifdef ESP8266
-   WiFi.setSleepMode(WIFI_NONE_SLEEP);
-#elif defined(ESP32)
    WiFi.setSleep(false);
-#endif
 
    // WiFi.disconnect();
    // delay(100);
@@ -67,9 +59,7 @@ bool connectWifi(const char *ssid, const char *password) {
          DBG("Falha Wi-Fi. reason = %d\n", wifiDisconnectReason);
          return false;
       }
-#ifdef ESP8266
       ledUpdate();
-#endif
       delay(RETRY_DELAY_MS);
 
       if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
@@ -133,11 +123,7 @@ LinkStatus testConnection(const char *ssid, const char *password, int16_t *rssi,
    LinkStatus status = LINK_WIFI_FAIL;
    for (uint8_t tentativa = 0; tentativa < retries; tentativa++) {
       if (!connectWifi(ssid, password)) {
-#ifdef ESP32         
          ledFlash(LED_MAGENTA, 150);         
-#else
-         setColor(LED_MAGENTA);
-#endif
          status = LINK_WIFI_FAIL;
          DBG("%s link fail. Tentativa %d\n", ssid, tentativa + 1);
       } else {
@@ -145,18 +131,10 @@ LinkStatus testConnection(const char *ssid, const char *password, int16_t *rssi,
          bool internetOk = testInternet();
 
          if (internetOk) {
-#ifdef ESP32         
             ledFlash(LED_GREEN, 150);         
-#else
-            setColor(LED_GREEN);
-#endif
             status = LINK_ONLINE;
          } else {
-#ifdef ESP32         
             ledFlash(LED_MAGENTA, 150);         
-#else
-            setColor(LED_MAGENTA);
-#endif
             status = LINK_INTERNET_FAIL;
          }
 

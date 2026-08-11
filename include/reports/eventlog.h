@@ -9,7 +9,8 @@
 
 uint16_t getEventCount();
 
-const Event *getEvent(uint16_t index);
+bool getEvent(uint16_t index, Event& evento);
+void initEventsMutex();
 
 //=============================================================================
 // Gravação

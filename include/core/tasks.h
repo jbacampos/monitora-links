@@ -1,7 +1,5 @@
 #pragma once
 
-#ifdef ESP32
-
 void initLedTask();
 void initTelegramTask();
 
@@ -12,4 +10,3 @@ void unlockRuntime();
 void openServiceWindow();
 void closeServiceWindow();
 
-#endif

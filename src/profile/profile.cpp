@@ -14,7 +14,7 @@ const LinkConfig linksAP903[] = { { .nome = "LINK VIVO",
                                   { .nome = "REDE AP_903",
                                     .ssid = "AP_903",
                                     .senha = AP_903_PASSWORD,
-                                    .identificaLocal = false } };
+                                    .identificaLocal = true } };
 
 const LinkConfig linksSitio[] = { { .nome = "REDE SÍTIO",
                                     .ssid = "Sitio",
@@ -23,7 +23,7 @@ const LinkConfig linksSitio[] = { { .nome = "REDE SÍTIO",
                                   { .nome = "REDE IOT",
                                     .ssid = "DispIoT",
                                     .senha = IOT_PASSWORD,
-                                    .identificaLocal = true },
+                                    .identificaLocal = false },
                                  //  { .nome = "REDE CASINHA",
                                  //    .ssid = "Casinha",
                                  //    .senha = CASINHA_PASSWORD,

@@ -16,11 +16,7 @@ EventsData gEvents{};
 
 bool initFS() {
 
-#ifdef ESP8266
-   return LittleFS.begin();
-#elif defined(ESP32)
    return LittleFS.begin(true);
-#endif
 }
 
 

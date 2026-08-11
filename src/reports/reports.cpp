@@ -87,11 +87,11 @@ String buildLog(uint16_t maxEventos) {
    // Ordena os índices pelo ID do evento
    for (uint16_t i = 0; i < total - 1; i++) {
       for (uint16_t j = i + 1; j < total; j++) {
+         
+         Event a;
+         Event b;
 
-         const Event* a = getEvent(indices[i]);
-         const Event* b = getEvent(indices[j]);
-
-         if (a != nullptr && b != nullptr && a->id > b->id) {
+         if (getEvent(indices[i], a) && getEvent(indices[j], b) && a.id > b.id) {
             uint16_t temp = indices[i];
             indices[i] = indices[j];
             indices[j] = temp;
@@ -104,21 +104,21 @@ String buildLog(uint16_t maxEventos) {
 
    for (uint16_t i = inicio; i < total; i++) {
 
-      const Event* ev = getEvent(indices[i]);
+      Event ev;
 
-      if (ev == nullptr) {
-         msg += "\nERRO: getEvent retornou nullptr\n";
+      if (!getEvent(indices[i], ev)) {
+         msg += "\nERRO: getEvent retornou false\n";
          continue;
       }
 
       msg += "\n#";
-      msg += String(ev->id);
+      msg += String(ev.id);
       msg += " ";
 
-      if (ev->tipo == EVENT_BOOT) {
+      if (ev.tipo == EVENT_BOOT) {
          msg += "Monitor reiniciado";
       } else {
-         const LinkConfig& cfg = gPerfil->links[ev->link];
+         const LinkConfig& cfg = gPerfil->links[ev.link];
          msg += cfg.nome;
       }
 
@@ -126,26 +126,26 @@ String buildLog(uint16_t maxEventos) {
 
       msg += "Motivo : ";
 
-      if (ev->tipo == EVENT_BOOT) {
-         msg += bootReasonDescription(ev->bootReason);
+      if (ev.tipo == EVENT_BOOT) {
+         msg += bootReasonDescription(ev.bootReason);
       } else {
-         msg += linkStatusDescription(ev->motivo);
+         msg += linkStatusDescription(ev.motivo);
       }
 
       msg += "\n";
 
-      if (ev->inicio != 0) {
+      if (ev.inicio != 0) {
          msg += "Inicio      :  ";
-         msg += formatDateTime(ev->inicio, DATETIME_SHORT);
+         msg += formatDateTime(ev.inicio, DATETIME_SHORT);
          msg += "\n";
 
          msg += "Duracao :  ";
-         msg += formatDuration(ev->duracaoSeg);
+         msg += formatDuration(ev.duracaoSeg);
          msg += "\n";
 
       } else {
          msg += "Em         :  ";
-         msg += formatDateTime(ev->fim, DATETIME_SHORT);
+         msg += formatDateTime(ev.fim, DATETIME_SHORT);
          msg += "\n";
 
       }
@@ -285,16 +285,8 @@ String buildSystemSummary() {
       obs = " (crítico)";
    msg += obs;
 
-#ifdef ESP8266
-   FSInfo info;
-   LittleFS.info(info);
-   uint32_t total = info.totalBytes;
-   uint32_t used  = info.usedBytes;
-#elif defined(ESP32)
    uint32_t total = LittleFS.totalBytes();
    uint32_t used  = LittleFS.usedBytes();
-#endif
-
 
    msg += "\n\n<b><u>Armazenamento</u></b>";
    msg += "\n<b>LittleFS</b>";
@@ -321,9 +313,7 @@ String buildSystemSummary() {
 
 String getHardwareName() {
 
-#ifdef ESP8266
-   return "ESP8266";
-#elif defined(ESP32)
+#ifdef ESP32
    return "ESP32";
 #else
    return "Desconhecido";

@@ -25,14 +25,13 @@ void setup() {
    ledInit();
    ledStartup();
 
-#ifdef ESP32
    initLedTask();     // começa imediatamente a sequência visual
    initRuntimeMutex();
+   initEventsMutex();
    WiFi.onEvent(onWiFiEvent);
    initTelegramTask();
 
    DBG("setup() executando no core %d\n", xPortGetCoreID());
-#endif
 
 
    String msg = "\n==========================\n";
@@ -64,9 +63,7 @@ void setup() {
    initSystem();
    ledSystemReady();
 
-#ifdef ESP32
    DBG("setup() executando no core %d\n", xPortGetCoreID());
-#endif
 
    onBoot();
 
@@ -98,67 +95,64 @@ void loop() {
 
     // A conexão mantida entre ciclos pertenceu à janela de serviços.
    // Encerra-a antes de iniciar os testes.
-#ifdef ESP32
    closeServiceWindow();
-#endif   
    disconnectWifi();
    ledBeginCycle();
    int16_t rssi;
    LinkStatus status[gPerfil->numLinks];
-   // TelegramUpdate upd;
-   // bool telegramChecked = false;
-   // uint32_t proximoGetUpdates = millis();
+   uint8_t wifiFailCycles;
+
 
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
-#ifdef ESP8266
       ledUpdate();
-#endif
       DBG("\n=== %s ===\n", gPerfil->links[i].nome);
 
-#ifdef ESP32
       lockRuntime();
-#endif
-
       uint8_t retries = (gRuntime.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
-#ifdef ESP32
       unlockRuntime();
-#endif
       
       status[i] = testConnection(gPerfil->links[i].ssid, gPerfil->links[i].senha, &rssi, retries);
 
-#ifdef ESP32
       lockRuntime();
-#endif
+      wifiFailCycles = gRuntime.links[i].wifiFailCycles;
+      unlockRuntime();
 
       DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
       if (status[i] == LINK_WIFI_FAIL) {
-         gRuntime.links[i].wifiFailCycles++;
-         
-         DBG("LINK_WIFI_FAIL no ciclo %d. Máximo de ciclos ignorados = %d\n", gRuntime.links[i].wifiFailCycles, WIFI_FAIL_CYCLES);
+         wifiFailCycles++;
 
-         if (gRuntime.links[i].wifiFailCycles < WIFI_FAIL_CYCLES) {
+         DBG("LINK_WIFI_FAIL no ciclo %d. Máximo de ciclos ignorados = %d\n", wifiFailCycles, WIFI_FAIL_CYCLES);
+
+         if (wifiFailCycles < WIFI_FAIL_CYCLES) {
             DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", gRuntime.links[i].wifiFailCycles, WIFI_FAIL_CYCLES);
-#ifdef ESP32
+            lockRuntime();
+            gRuntime.links[i].wifiFailCycles = wifiFailCycles;
             unlockRuntime();
-#endif
             continue;   // não chama processLink()
 
          }
       }
       else {
-         gRuntime.links[i].wifiFailCycles = 0;
+         wifiFailCycles = 0;
       }
 
-      processLinkState(&gRuntime.links[i], i, status[i], rssi);
+LinkState state;
+
+      lockRuntime();
+      state = gRuntime.links[i];
+      unlockRuntime();
+
+      processLinkState(&state, i, status[i], rssi);
+
+      lockRuntime();
+      gRuntime.links[i] = state;
+      unlockRuntime();
 
       // Verifica se existe um link que caiu durante
       // o horário de silêncio e gera a notificação
       // quando sair dele:
       checkNotificationPolicy();
 
-#ifdef ESP32
-      unlockRuntime();
-#endif      
       disconnectWifi();
    }
 

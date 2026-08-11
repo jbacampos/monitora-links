@@ -2,7 +2,6 @@
 #include "core/tasks.h"
 #include "hardware/led.h" 
 
-#ifdef ESP32
 
 #include <Arduino.h>
 #include <network/telegram.h>
@@ -218,13 +217,19 @@ void initRuntimeMutex() {
 
 void lockRuntime() {
 
+   DBG(">>> lockRuntime: tentando\n");
+
    if (runtimeMutex != nullptr)
       xSemaphoreTake(runtimeMutex, portMAX_DELAY);
+
+   DBG(">>> lockRuntime: conseguiu\n");
 }
 
 void unlockRuntime() {
 
+   DBG("<<< unlockRuntime\n");
+
    if (runtimeMutex != nullptr)
       xSemaphoreGive(runtimeMutex);
 }
-#endif
+

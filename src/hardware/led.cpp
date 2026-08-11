@@ -138,31 +138,6 @@ void ledInit() {
 
    setColor(LED_BLANK);
 
-#ifdef ESP8266   
-
-// Autoteste
-   int16_t espera = 250;
-   int8_t i;
-   for (int i = 0; i < 5; i++) {
-      setColor(LED_BLUE);
-      delay(espera);
-   }
-   for (int i = 0; i < 5; i++) {
-      setColor(LED_GREEN);
-      delay(espera);
-   }
-   for (int i = 0; i < 5; i++) {
-      setColor(LED_YELLOW);
-      delay(espera);
-   }
-   for (int i = 0; i < 5; i++) {
-      setColor(LED_RED);
-      delay(espera);
-   }
-   
-   setColor(LED_BLANK);
-
-#endif
 }
 
 void ledBeginCycle() {

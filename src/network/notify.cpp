@@ -210,36 +210,43 @@ void sendPendingNotifications() {
 
    if (inQuietHours())
       return;
-   
-   lockRuntime();
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
 
       PendingNotification n;
-      n = gRuntime.pendingNotifications[i];
 
-      String msg = buildMessage(n);
+      lockRuntime();
+
+      if (!gRuntime.pendingNotifications[i].pending) {
+         unlockRuntime();
+         continue;
+      }
+
+      n = gRuntime.pendingNotifications[i];
 
       unlockRuntime();
 
-      if (telegramSendMessage(msg)) {
-         lockRuntime();
-         // Confirma que o slot ainda contém a mesma notificação.
-         if (gRuntime.pendingNotifications[i].pending &&
-             gRuntime.pendingNotifications[i].evento == n.evento) {
+      String msg = buildMessage(n);
 
-            gRuntime.pendingNotifications[i].pending = false;
-            gRuntime.saveCount++;
-            saveStorage(FILE_RUNTIME, gRuntime);
-         }
-
-      } else {
+      if (!telegramSendMessage(msg)) {
          DBG("Falha ao enviar notificacao #%u\n", n.evento);
          break;
       }
-   }
 
-   unlockRuntime();
+      lockRuntime();
+
+      // Confirma que o slot ainda contém a mesma notificação.
+      if (gRuntime.pendingNotifications[i].pending &&
+          gRuntime.pendingNotifications[i].evento == n.evento) {
+
+         gRuntime.pendingNotifications[i].pending = false;
+         gRuntime.saveCount++;
+
+         saveStorage(FILE_RUNTIME, gRuntime);
+      }
+
+      unlockRuntime();
+   }
 }
 
 //=============================================================================

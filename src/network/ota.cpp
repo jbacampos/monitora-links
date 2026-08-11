@@ -21,16 +21,9 @@
 #include <ArduinoJson.h>
 #include "config/config.h"
 
-#ifdef ESP32
 #include <HTTPClient.h>
 #include <Update.h>
 #include <WiFiClientSecure.h>
-
-#elif defined(ESP8266)
-#include <ESP8266HTTPClient.h>
-#include <Updater.h>
-#include <WiFiClientSecureBearSSL.h>
-#endif
 
 bool updateOta(const char *url) {
    DBG("\n==========================\n");
@@ -38,11 +31,7 @@ bool updateOta(const char *url) {
    DBG("==========================\n");
    DBG("URL: %s\n", url);
 
-#ifdef ESP32
    WiFiClientSecure client;
-#elif defined(ESP8266)
-   BearSSL::WiFiClientSecure client;
-#endif
 
    // Primeira implementação:
    // usa HTTPS, mas não valida o certificado do servidor.
@@ -103,9 +92,7 @@ bool updateOta(const char *url) {
 
    if (written != (size_t)contentLength) {
       DBG("OTA: firmware recebido incompleto.\n");
-#ifdef ESP32
       Update.abort();
-#endif
       http.end();
       return false;
    }    
