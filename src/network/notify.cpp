@@ -5,12 +5,11 @@
 #include "config/platform.h"
 #include "core/storage.h"
 #include "network/telegram.h"
+#include <core/tasks.h>
 
 //=============================================================================
 // Auxiliares
 //=============================================================================
-
-static SemaphoreHandle_t notificationMutex = nullptr;
 
 static String buildMessage(const PendingNotification &n) {
 
@@ -114,15 +113,11 @@ static String buildMessage(const PendingNotification &n) {
 
 void queueNotification(const PendingNotification &n) {
 
-   if (notificationMutex == nullptr)
-      return;
-
-   if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
-      return;
-
    DBG("Adicionando notificacao #%u na fila\n", n.evento);
 
    bool adicionou = false;
+   
+   lockRuntime();
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
       if (!gRuntime.pendingNotifications[i].pending) {
@@ -132,38 +127,39 @@ void queueNotification(const PendingNotification &n) {
          break;
       }
    }
-
-   xSemaphoreGive(notificationMutex);
+   
+   unlockRuntime();
 
    if (!adicionou)
       DBG("Fila de notificacoes cheia.\n");
 }
 
 
-void initNotificationMutex() {
-   notificationMutex = xSemaphoreCreateMutex();
-
-   if (notificationMutex == nullptr) {
-      DBG("ERRO criando mutex de notificacoes\n");
-   } else {
-      DBG("Mutex de notificacoes criado\n");
-   }
-}
 //=============================================================================
 // Consulta
 //=============================================================================
 
 bool hasPendingNotifications() {
 
+   lockRuntime();
+   
+   bool hasPending = false;
+
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      if (gRuntime.pendingNotifications[i].pending)
-         return true;
+      if (gRuntime.pendingNotifications[i].pending) {
+         hasPending = true;
+         break;
+      }
    }
 
-   return false;
+   unlockRuntime();
+
+   return hasPending;
 }
 
 uint8_t getPendingNotificationCount() {
+
+   lockRuntime();
 
    uint8_t totPends = 0;
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
@@ -171,6 +167,8 @@ uint8_t getPendingNotificationCount() {
          totPends++;
    }
 
+   unlockRuntime();
+   
    return totPends;
 }
 
@@ -180,13 +178,9 @@ uint8_t getPendingNotificationCount() {
 
 void clearPendingNotifications() {
 
-   if (notificationMutex == nullptr)
-      return;
-
-   if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
-      return;
-
    bool mudou = false;
+   
+   lockRuntime();
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
       if (gRuntime.pendingNotifications[i].pending) {
@@ -199,8 +193,9 @@ void clearPendingNotifications() {
       gRuntime.saveCount++;
       saveStorage(FILE_RUNTIME, gRuntime);
    }
+   
+   unlockRuntime();
 
-   xSemaphoreGive(notificationMutex);
 }
 
 void sendPendingNotifications() {
@@ -215,30 +210,20 @@ void sendPendingNotifications() {
 
    if (inQuietHours())
       return;
+   
+   lockRuntime();
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
 
       PendingNotification n;
-
-      if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
-         return;
-
-      if (!gRuntime.pendingNotifications[i].pending) {
-         xSemaphoreGive(notificationMutex);
-         continue;
-      }
-
       n = gRuntime.pendingNotifications[i];
-
-      xSemaphoreGive(notificationMutex);
 
       String msg = buildMessage(n);
 
+      unlockRuntime();
+
       if (telegramSendMessage(msg)) {
-
-         if (xSemaphoreTake(notificationMutex, portMAX_DELAY) != pdTRUE)
-            return;
-
+         lockRuntime();
          // Confirma que o slot ainda contém a mesma notificação.
          if (gRuntime.pendingNotifications[i].pending &&
              gRuntime.pendingNotifications[i].evento == n.evento) {
@@ -248,13 +233,13 @@ void sendPendingNotifications() {
             saveStorage(FILE_RUNTIME, gRuntime);
          }
 
-         xSemaphoreGive(notificationMutex);
-
       } else {
          DBG("Falha ao enviar notificacao #%u\n", n.evento);
          break;
       }
    }
+
+   unlockRuntime();
 }
 
 //=============================================================================

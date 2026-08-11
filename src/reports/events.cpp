@@ -8,6 +8,7 @@
 #include "config/platform.h"
 #include "core/storage.h"
 #include "core/types.h"
+#include <core/tasks.h>
 
 //=============================================================================
 // Transição de estado dos links
@@ -99,11 +100,21 @@ void onBoot() {
    time_t inicio = 0;
    time_t fim = now();
 
-   DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(gRuntime.bootReason));
-   if ((gRuntime.bootReason == BOOT_AFTER_REBOOT_COMMAND || gRuntime.bootReason == BOOT_AFTER_OTA) && gRuntime.rebootStartTime != 0) {
-      inicio = gRuntime.rebootStartTime;
+   BootReason bootReason;
+   time_t rebootStartTime;
+
+   lockRuntime();
+
+   bootReason = gRuntime.bootReason;
+   rebootStartTime = gRuntime.rebootStartTime;
+
+   unlockRuntime();
+
+   DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(bootReason));
+   if ((bootReason == BOOT_AFTER_REBOOT_COMMAND || bootReason == BOOT_AFTER_OTA) && rebootStartTime != 0) {
+      inicio = rebootStartTime;
       duracao = (uint32_t)(fim - inicio);
-      DBG("Inicio    : %s\n", formatDateTime(gRuntime.rebootStartTime).c_str());
+      DBG("Inicio    : %s\n", formatDateTime(rebootStartTime).c_str());
    } else {
       inicio = 0;
       duracao = 0;
@@ -115,7 +126,7 @@ void onBoot() {
    Event ev = {};
    ev.id = reserveEventId(false);
    ev.link = LINK_SYSTEM;
-   ev.bootReason = gRuntime.bootReason;
+   ev.bootReason = bootReason;
    ev.inicio = inicio;
    ev.fim = fim;
    ev.duracaoSeg = duracao;
@@ -126,7 +137,7 @@ void onBoot() {
    PendingNotification n = {};
    n.pending = true;
    n.link = LINK_SYSTEM;
-   n.bootReason = gRuntime.bootReason;
+   n.bootReason = bootReason;
    n.tipo = NOTIFY_BOOT;
    n.evento = ev.id;
    n.inicio = inicio;
@@ -136,10 +147,13 @@ void onBoot() {
 
    queueNotification(n);
 
+   lockRuntime();
+
    gRuntime.bootReason = BOOT_POWERON;
    gRuntime.rebootStartTime = now();
    gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
 
+   unlockRuntime();
    
 }

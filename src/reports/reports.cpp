@@ -5,6 +5,7 @@
 #include "network/notify.h"
 #include "network/ntp.h"
 #include "reports/stats.h"
+#include <core/tasks.h>
 
 //=============================================================================
 // Status
@@ -17,9 +18,15 @@ String buildStatus() {
 
    msg += "<b><u>Links\n\n</u></b>";
 
+   lockRuntime();
+
+   RuntimeData runtime = gRuntime;
+
+   unlockRuntime();
+
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
       const LinkConfig &cfg = gPerfil->links[i];
-      const LinkState &link = gRuntime.links[i];
+      const LinkState &link = runtime.links[i];
 
       if (link.status == LINK_ONLINE) {
          msg += EmojiOnline;
@@ -57,66 +64,6 @@ String buildStatus() {
 //=============================================================================
 // Histórico
 //=============================================================================
-
-// String buildLog_antigo (uint16_t maxEventos) {
-//    String msg = "\n==========================\n";
-//    msg += "Eventos - últimos ";
-//    msg += String(maxEventos);
-//    msg += "\n==========================\n";
-
-//    uint16_t total = getEventCount();
-
-//    if (total == 0)
-//       return msg + "Nenhum evento.\n";
-
-//    uint16_t inicio = (total > maxEventos) ? total - maxEventos : 0;
-
-//    for (uint16_t i = inicio; i < total; i++) {
-
-//       const Event* ev = getEvent(i);
-//       if (ev == nullptr) {
-//          msg += "\nERRO: getEvent retornou nullptr\n";
-//          continue;
-//       }
-//       const LinkConfig& cfg = gPerfil->links[ev->link];
-
-//       msg += "\n#";
-//       msg += String(ev->id);
-//       msg += " ";
-//       if (ev->tipo == EVENT_BOOT) {
-//          msg += "Monitor reiniciado";
-//       } else {
-//          msg += cfg.nome;
-//       }
-
-//       msg += "\n";
-
-//       msg += "Motivo : ";
-//       if (ev->tipo == EVENT_BOOT) {
-//          msg += bootReasonDescription(ev->bootReason);
-//       } else {
-//          msg += linkStatusDescription(ev->motivo);
-//       }
-//       msg += "\n";
-
-//       msg += "Inicio : ";
-
-//       if (ev->inicio != 0)
-//          msg += formatDateTime(ev->inicio, DATETIME_SHORT);
-//       else
-//          msg += "desconhecido";
-
-//       msg += "\n";
-
-//       msg += "Duracao: ";
-//       msg += formatDuration(ev->duracaoSeg);
-//       msg += "\n";
-//    }
-
-//    msg += "\n";
-
-//    return msg;
-// }
 
 String buildLog(uint16_t maxEventos) {
    String msg = "\n==========================\n";
@@ -289,6 +236,12 @@ String buildStatistics(uint16_t dias) {
 String buildSystemSummary() {
    String msg;
 
+   lockRuntime();
+
+   RuntimeData runtime = gRuntime;
+
+   unlockRuntime();
+
    msg += "\n<b><u>Notificações</u></b>";
    msg += buildInfoNotif();
    msg += buildInfoLed();
@@ -301,7 +254,7 @@ String buildSystemSummary() {
    msg += getHardwareName();
 
    msg += "\n  Boots:           ";
-   msg += formatNumber(gRuntime.bootCount).c_str();
+   msg += formatNumber(runtime.bootCount).c_str();
 
    msg += "\n  Ciclos:           ";
    msg += formatNumber(gCycleCount).c_str();
@@ -360,7 +313,7 @@ String buildSystemSummary() {
    msg += ("\n  Livre p/ OTA:        ");
    msg += prettySize(ESP.getFreeSketchSpace());
    msg += ("\n  Gravações:            ");
-   msg += formatNumber(gRuntime.saveCount + gEvents.saveCount + gConfig.saveCount).c_str();
+   msg += formatNumber(runtime.saveCount + gEvents.saveCount + gConfig.saveCount).c_str();
    msg += ("\n");
 
    return msg;

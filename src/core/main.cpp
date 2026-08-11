@@ -27,7 +27,6 @@ void setup() {
 
 #ifdef ESP32
    initLedTask();     // começa imediatamente a sequência visual
-   initNotificationMutex();
    initRuntimeMutex();
    WiFi.onEvent(onWiFiEvent);
    initTelegramTask();
@@ -116,8 +115,21 @@ void loop() {
 #endif
       DBG("\n=== %s ===\n", gPerfil->links[i].nome);
 
+#ifdef ESP32
+      lockRuntime();
+#endif
+
       uint8_t retries = (gRuntime.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
+#ifdef ESP32
+      unlockRuntime();
+#endif
+      
       status[i] = testConnection(gPerfil->links[i].ssid, gPerfil->links[i].senha, &rssi, retries);
+
+#ifdef ESP32
+      lockRuntime();
+#endif
+
       DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
       if (status[i] == LINK_WIFI_FAIL) {
          gRuntime.links[i].wifiFailCycles++;
@@ -126,7 +138,11 @@ void loop() {
 
          if (gRuntime.links[i].wifiFailCycles < WIFI_FAIL_CYCLES) {
             DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", gRuntime.links[i].wifiFailCycles, WIFI_FAIL_CYCLES);
+#ifdef ESP32
+            unlockRuntime();
+#endif
             continue;   // não chama processLink()
+
          }
       }
       else {
@@ -140,6 +156,9 @@ void loop() {
       // quando sair dele:
       checkNotificationPolicy();
 
+#ifdef ESP32
+      unlockRuntime();
+#endif      
       disconnectWifi();
    }
 

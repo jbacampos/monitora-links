@@ -9,12 +9,10 @@
 // Fila de notificações
 //=============================================================================
 
-void queueNotification(const PendingNotification &n);
-
 bool hasPendingNotifications();
 uint8_t getPendingNotificationCount();
 void sendPendingNotifications();
-void initNotificationMutex();
+void queueNotification(const PendingNotification &n);
 
 //=============================================================================
 // Política de notificações

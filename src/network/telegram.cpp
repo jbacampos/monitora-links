@@ -5,6 +5,7 @@
 
 #include "config/config.h"
 #include "config/platform.h"
+#include "core/tasks.h"
 #include "core/storage.h"
 #include "network/notify.h"
 #include "network/ntp.h"
@@ -270,10 +271,14 @@ CommandResult cmdOta(const String &) {
 
 void doReboot() {
 
+   lockRuntime();
+
    gRuntime.bootReason = BOOT_AFTER_REBOOT_COMMAND;
    gRuntime.rebootStartTime = now();
    gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
+
+   unlockRuntime();
 
    ESP.restart();
 }
@@ -314,9 +319,14 @@ void doOta()
       return;
    }
 
+   lockRuntime();
+
    gRuntime.rebootStartTime = now();
    gRuntime.bootReason = BOOT_AFTER_OTA;
+   gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
+
+   unlockRuntime();
 
    ESP.restart();
 }
@@ -369,9 +379,13 @@ bool telegramSendMessage(const String &text) {
 
 bool telegramGetUpdates(TelegramUpdate *upd) {
 
+   lockRuntime();
+
    String url = "https://" + String(TELEGRAM_HOST) + "/bot" + gPerfil->telegramConfig->telegramToken +
                 "/getUpdates?offset=" + String(gRuntime.telegramUpdateId + 1) + "&limit=1";
 
+   unlockRuntime();
+   
    // DBG("Entrou no telegramGetUpdates. URL = \n%s\n", url.c_str());
 
    WiFiClientSecure client;

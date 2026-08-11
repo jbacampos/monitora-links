@@ -134,9 +134,9 @@ LinkStatus testConnection(const char *ssid, const char *password, int16_t *rssi,
    for (uint8_t tentativa = 0; tentativa < retries; tentativa++) {
       if (!connectWifi(ssid, password)) {
 #ifdef ESP32         
-         ledFlash(LED_RED, 150);         
+         ledFlash(LED_MAGENTA, 150);         
 #else
-         setColor(LED_RED);
+         setColor(LED_MAGENTA);
 #endif
          status = LINK_WIFI_FAIL;
          DBG("%s link fail. Tentativa %d\n", ssid, tentativa + 1);
@@ -153,9 +153,9 @@ LinkStatus testConnection(const char *ssid, const char *password, int16_t *rssi,
             status = LINK_ONLINE;
          } else {
 #ifdef ESP32         
-            ledFlash(LED_RED, 150);         
+            ledFlash(LED_MAGENTA, 150);         
 #else
-            setColor(LED_RED);
+            setColor(LED_MAGENTA);
 #endif
             status = LINK_INTERNET_FAIL;
          }
