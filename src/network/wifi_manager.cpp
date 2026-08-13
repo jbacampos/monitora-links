@@ -97,14 +97,12 @@ bool connectToOnlineLink(const LinkStatus status[]) {
       if (status[i] != LINK_ONLINE)
          continue;
 
-      DBG("\nConectando ao link %s para serviços...\n",
-          gPerfil->links[i].nome);
+      // DBG("\nConectando ao link %s para serviços...\n", gPerfil->links[i].nome);
 
       if (connectWifi(gPerfil->links[i].ssid,
                       gPerfil->links[i].senha)) {
 
-         DBG("Link %s disponível para serviços\n",
-             gPerfil->links[i].nome);
+         DBG("Link %s disponível para serviços\n", gPerfil->links[i].nome);
 
          return true;
       }

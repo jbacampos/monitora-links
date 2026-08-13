@@ -33,7 +33,8 @@ bool parseUintArg(const String &args, uint16_t &value, uint16_t defaultValue, ui
 static bool isUnsignedInteger(const String &s);
 
 static CommandResult cmdHelp(const String &args);
-static CommandResult cmdStatus(const String &args);
+// static CommandResult cmdStatus(const String &args);
+CommandResult cmdStatus(const String &args);
 static CommandResult cmdStats(const String &args);
 static CommandResult cmdLog(const String &args);
 static CommandResult cmdNotify(const String &args);

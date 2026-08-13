@@ -20,6 +20,10 @@ typedef struct {
    void (*deferredFunction)() = nullptr;
 } CommandResult;
 
+
+CommandResult cmdStatus(const String &args);
+
+
 //=============================================================================
 // Inicialização
 //=============================================================================

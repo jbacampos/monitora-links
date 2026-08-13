@@ -22,6 +22,12 @@ void setup() {
 
    Serial.begin(115200);
 
+   String msg = "\n==========================\n";
+   msg += "Sistema iniciado\n";
+   msg += "==========================\n";
+
+   DBG("%s", msg.c_str());
+
    ledInit();
    ledStartup();
 
@@ -33,12 +39,6 @@ void setup() {
 
    DBG("setup() executando no core %d\n", xPortGetCoreID());
 
-
-   String msg = "\n==========================\n";
-   msg += "Sistema iniciado\n";
-   msg += "==========================\n";
-
-   DBG("%s", msg.c_str());
 
    gPerfil = detectProfile();
 
@@ -117,7 +117,7 @@ void loop() {
       wifiFailCycles = gRuntime.links[i].wifiFailCycles;
       unlockRuntime();
 
-      DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
+      // DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
       if (status[i] == LINK_WIFI_FAIL) {
          wifiFailCycles++;
 
@@ -136,7 +136,7 @@ void loop() {
          wifiFailCycles = 0;
       }
 
-LinkState state;
+      LinkState state;
 
       lockRuntime();
       state = gRuntime.links[i];
@@ -164,6 +164,11 @@ LinkState state;
 
    // DBG("\nLinks online: %u/%u\n", online, gPerfil->numLinks);
 
+   //************************************************************************
+   // Ver se não dá apra deixar a última conexão aberta, para evitar o 
+   // overhead de reconectar para enviar notificações e atualizar o Telegram.
+   //************************************************************************
+
    bool serviceConnection = false;
 
    if (online > 0)
@@ -171,6 +176,16 @@ LinkState state;
 
    if (serviceConnection)
       openServiceWindow();
+
+   MonitorCommand command = {};
+
+   while (getMonitorCommand(command)) {
+      if (strcmp(command.text, "/s") == 0) {
+         CommandResult result = cmdStatus("");
+         DBG("Comando retirado da fila: %s\n", command.text);
+         queueTelegramMessage(result.message.c_str());
+      }
+   }
 
    LedStatus ledStatus;
    DBG("\nCiclo %lu concluído. Links on-line: %u/%u\n", gCycleCount + 1, online, gPerfil->numLinks);
