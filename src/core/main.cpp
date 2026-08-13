@@ -222,6 +222,22 @@ void loop() {
          CommandResult result = cmdNotify(args);
 
          queueTelegramMessage(result.message.c_str());
+      } else if (strncmp(command.text, "/q", 2) == 0 ||
+         strncmp(command.text, "/quiet", 6) == 0) {
+
+         String text = command.text;
+         String args;
+
+         int p = text.indexOf(' ');
+
+         if (p >= 0) {
+            args = text.substring(p + 1);
+            args.trim();
+         }
+
+         CommandResult result = cmdQuiet(args);
+
+         queueTelegramMessage(result.message.c_str());
       }
    }
 
