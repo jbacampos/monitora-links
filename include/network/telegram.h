@@ -28,6 +28,10 @@ CommandResult cmdLog(const String &args);
 CommandResult cmdNotify(const String &args);
 CommandResult cmdQuiet(const String &args);
 CommandResult cmdLed(const String &args);
+CommandResult cmdOta(const String &args);
+CommandResult cmdReboot(const String &args);
+void doReboot();
+void doOta();
 
 
 //=============================================================================

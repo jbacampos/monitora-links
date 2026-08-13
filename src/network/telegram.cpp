@@ -39,10 +39,10 @@ CommandResult cmdLog(const String &args);
 CommandResult cmdNotify(const String &args);
 CommandResult cmdQuiet(const String &args);
 CommandResult cmdLed(const String &args);
-static CommandResult cmdReboot(const String &args);
-static CommandResult cmdOta(const String &args);
-static void doReboot();
-static void doOta();
+CommandResult cmdReboot(const String &args);
+CommandResult cmdOta(const String &args);
+void doReboot();
+void doOta();
 
 //=============================================================================
 // Comandos

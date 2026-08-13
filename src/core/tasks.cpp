@@ -130,6 +130,16 @@ static void telegramTask(void *parameter) {
             DBG("Falha ao enviar mensagem da fila do Telegram\n");
             break;
          }
+
+         if (message.action == TELEGRAM_ACTION_REBOOT) {
+            DBG("Mensagem enviada. Executando reboot.\n");
+            doReboot();
+         }
+
+         if (message.action == TELEGRAM_ACTION_OTA) {
+            DBG("Mensagem enviada. Executando OTA.\n");
+            doOta();
+         }
       }
 
       // Envia primeiro as notificações pendentes
@@ -264,7 +274,8 @@ bool getMonitorCommand(MonitorCommand &command) {
    return xQueueReceive(commandQueue, &command, 0) == pdPASS;
 }
 
-bool queueTelegramMessage(const char *text) {
+bool queueTelegramMessage(const char *text, TelegramAction action) {
+   
    if (telegramMessageQueue == nullptr)
       return false;
 
@@ -272,6 +283,8 @@ bool queueTelegramMessage(const char *text) {
 
    strncpy(message.text, text, sizeof(message.text) - 1);
    message.text[sizeof(message.text) - 1] = '\0';
+
+   message.action = action;
 
    DBG("Mensagem do Telegram colocada na fila: %s\n", message.text);
 

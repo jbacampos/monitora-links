@@ -74,14 +74,6 @@ void setup() {
       DBG("Link %u: %s\n", i + 1, gPerfil->links[i].nome);
    }
 
-//    // ******************************************
-//    // Para listar detalhes do sistema no início:
-//    // ******************************************
-//    // DBG("%s", buildSystemSummary().c_str());
-//    // DBG("%s", buildStatus().c_str());
-//    // DBG("%s", buildLog(10).c_str());
-//    // DBG("%s", buildStatistics(5).c_str());
-
    // ******************************************
    // Somente para apagar um arquivo:
    // ******************************************
@@ -93,7 +85,7 @@ void setup() {
 
 void loop() {
 
-    // A conexão mantida entre ciclos pertenceu à janela de serviços.
+   // A conexão mantida entre ciclos pertenceu à janela de serviços.
    // Encerra-a antes de iniciar os testes.
    closeServiceWindow();
    disconnectWifi();
@@ -238,7 +230,7 @@ void loop() {
          CommandResult result = cmdQuiet(args);
 
          queueTelegramMessage(result.message.c_str());
-         
+
       } else if (strncmp(command.text, "/led", 4) == 0) {
 
          String text = command.text;
@@ -255,10 +247,12 @@ void loop() {
 
       } else if (strcmp(command.text, "/h") == 0 ||
          strcmp(command.text, "/help") == 0) {
-
          CommandResult result = cmdHelp("");
-
          queueTelegramMessage(result.message.c_str());
+
+      } else if (strcmp(command.text, "/reboot") == 0) {
+         DBG("Comando retirado da fila: %s\n", command.text);
+         queueTelegramMessage("🔄 Reiniciando o monitor...",TELEGRAM_ACTION_REBOOT);
       }
    }
 
