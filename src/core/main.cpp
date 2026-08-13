@@ -184,6 +184,17 @@ void loop() {
          CommandResult result = cmdStatus("");
          DBG("Comando retirado da fila: %s\n", command.text);
          queueTelegramMessage(result.message.c_str());
+      } else if (strncmp(command.text, "/e", 2) == 0 ||
+         strncmp(command.text, "/stats", 6) == 0) {
+         String text = command.text;
+         String args;
+         int p = text.indexOf(' ');
+         if (p >= 0) {
+            args = text.substring(p + 1);
+            args.trim();
+         }
+         CommandResult result = cmdStats(args);
+         queueTelegramMessage(result.message.c_str());
       }
    }
 
