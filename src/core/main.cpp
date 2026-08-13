@@ -195,6 +195,17 @@ void loop() {
          }
          CommandResult result = cmdStats(args);
          queueTelegramMessage(result.message.c_str());
+      } else if (strncmp(command.text, "/l", 2) == 0 ||
+         strncmp(command.text, "/log", 4) == 0) {
+         String text = command.text;
+         String args;
+         int p = text.indexOf(' ');
+         if (p >= 0) {
+            args = text.substring(p + 1);
+            args.trim();
+         }
+         CommandResult result = cmdLog(args);
+         queueTelegramMessage(result.message.c_str());
       }
    }
 

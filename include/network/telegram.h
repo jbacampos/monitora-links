@@ -23,6 +23,7 @@ typedef struct {
 
 CommandResult cmdStatus(const String &args);
 CommandResult cmdStats(const String &args);
+CommandResult cmdLog(const String &args);
 
 
 //=============================================================================

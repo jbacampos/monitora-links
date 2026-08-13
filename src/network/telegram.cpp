@@ -36,7 +36,7 @@ static CommandResult cmdHelp(const String &args);
 // static CommandResult cmdStatus(const String &args);
 CommandResult cmdStatus(const String &args);
 CommandResult cmdStats(const String &args);
-static CommandResult cmdLog(const String &args);
+CommandResult cmdLog(const String &args);
 static CommandResult cmdNotify(const String &args);
 static CommandResult cmdQuiet(const String &args);
 static CommandResult cmdReboot(const String &args);
