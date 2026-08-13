@@ -206,6 +206,22 @@ void loop() {
          }
          CommandResult result = cmdLog(args);
          queueTelegramMessage(result.message.c_str());
+      } else if (strncmp(command.text, "/n", 2) == 0 ||
+         strncmp(command.text, "/notify", 7) == 0) {
+
+         String text = command.text;
+         String args;
+
+         int p = text.indexOf(' ');
+
+         if (p >= 0) {
+            args = text.substring(p + 1);
+            args.trim();
+         }
+
+         CommandResult result = cmdNotify(args);
+
+         queueTelegramMessage(result.message.c_str());
       }
    }
 
