@@ -198,18 +198,24 @@ void clearPendingNotifications() {
 
 }
 
+
 void sendPendingNotifications() {
 
-   if (WiFi.status() != WL_CONNECTED)
+   if (WiFi.status() != WL_CONNECTED) {
+      DBG("sendPendingNotifications(): WiFi OFFLINE\n");
       return;
+   }
 
    if (!gConfig.notification.enabled) {
+      DBG("sendPendingNotifications(): notificacoes DESATIVADAS\n");
       clearPendingNotifications();
       return;
    }
 
-   if (inQuietHours())
+   if (inQuietHours()) {
+      DBG("sendPendingNotifications(): horario quieto\n");
       return;
+   }
 
    for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
 
@@ -217,7 +223,9 @@ void sendPendingNotifications() {
 
       lockRuntime();
 
-      if (!gRuntime.pendingNotifications[i].pending) {
+      bool pending = gRuntime.pendingNotifications[i].pending;
+
+      if (!pending) {
          unlockRuntime();
          continue;
       }
@@ -235,7 +243,6 @@ void sendPendingNotifications() {
 
       lockRuntime();
 
-      // Confirma que o slot ainda contém a mesma notificação.
       if (gRuntime.pendingNotifications[i].pending &&
           gRuntime.pendingNotifications[i].evento == n.evento) {
 

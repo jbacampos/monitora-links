@@ -238,6 +238,27 @@ void loop() {
          CommandResult result = cmdQuiet(args);
 
          queueTelegramMessage(result.message.c_str());
+         
+      } else if (strncmp(command.text, "/led", 4) == 0) {
+
+         String text = command.text;
+         String args;
+
+         int p = text.indexOf(' ');
+
+         if (p >= 0) {
+            args = text.substring(p + 1);
+            args.trim();
+         }
+         CommandResult result = cmdLed(args);
+         queueTelegramMessage(result.message.c_str());
+
+      } else if (strcmp(command.text, "/h") == 0 ||
+         strcmp(command.text, "/help") == 0) {
+
+         CommandResult result = cmdHelp("");
+
+         queueTelegramMessage(result.message.c_str());
       }
    }
 

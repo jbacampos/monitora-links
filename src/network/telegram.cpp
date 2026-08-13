@@ -32,15 +32,14 @@ static bool telegramParseUpdate(const String &json, TelegramUpdate *upd);
 bool parseUintArg(const String &args, uint16_t &value, uint16_t defaultValue, uint16_t minValue, uint16_t maxValue);
 static bool isUnsignedInteger(const String &s);
 
-static CommandResult cmdHelp(const String &args);
-// static CommandResult cmdStatus(const String &args);
+CommandResult cmdHelp(const String &args);
 CommandResult cmdStatus(const String &args);
 CommandResult cmdStats(const String &args);
 CommandResult cmdLog(const String &args);
 CommandResult cmdNotify(const String &args);
 CommandResult cmdQuiet(const String &args);
+CommandResult cmdLed(const String &args);
 static CommandResult cmdReboot(const String &args);
-static CommandResult cmdLed(const String &args);
 static CommandResult cmdOta(const String &args);
 static void doReboot();
 static void doOta();
@@ -366,7 +365,7 @@ bool telegramSendMessage(const String &text) {
    if (code == HTTP_CODE_OK) {
       DBG("Telegram: mensagem enviada\n");
    } else {
-      DBG("Telegram... %s (%d)\n", http.errorToString(code).c_str(), code);
+      DBG("Telegram (sendMessage)... %s (%d)\n", http.errorToString(code).c_str(), code);
    }
 
    http.end();
@@ -411,7 +410,7 @@ bool telegramGetUpdates(TelegramUpdate *upd) {
       String json = http.getString();
       ok = telegramParseUpdate(json, upd);
    } else {
-      DBG("Telegram... %s (%d)\n", http.errorToString(code).c_str(), code);
+      DBG("Telegram (getUpdates)... %s (%d)\n", http.errorToString(code).c_str(), code);
    }
 
    http.end();

@@ -105,6 +105,7 @@ static void telegramTask(void *parameter) {
 
    for (;;) {
 
+      // DBG("TelegramTask: serviceWindowOpen=%d WiFi=%d\n", serviceWindowOpen, WiFi.status());
       if (!serviceWindowOpen || WiFi.status() != WL_CONNECTED) {
          vTaskDelay(pdMS_TO_TICKS(50));
          continue;
@@ -132,8 +133,10 @@ static void telegramTask(void *parameter) {
       }
 
       // Envia primeiro as notificações pendentes
-      if (hasPendingNotifications())
+      if (hasPendingNotifications()) {
+         DBG("TelegramTask: verificando notificacoes pendentes\n");
          sendPendingNotifications();
+      }
 
       proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
 
@@ -279,6 +282,10 @@ bool getTelegramMessage(TelegramMessage &message) {
    if (telegramMessageQueue == nullptr)
       return false;
 
-   DBG("Mensagem do Telegram recebida da fila: %s\n", message.text);
-   return xQueueReceive(telegramMessageQueue, &message, 0) == pdPASS;
+   if (xQueueReceive(telegramMessageQueue, &message, 0) != pdPASS)
+      return false;
+
+   DBG("Mensagem do Telegram retirada da fila: %s\n", message.text);
+
+   return true;
 }
