@@ -13,7 +13,8 @@
 // Para criar uma nova versão:
 //   - alterar a constante FW_VERSION no arquivo include/config/config.h
 //   - criar um release no GitHub, com a tag no formato vX.Y.Z (ex: v1.0.0)
-//   - anexar o binário do firmware (Monitora_Links.[esp32|esp8266].bin) ao release
+//   - anexar o binário do firmware (Monitora_Links.esp32.bin) ao release
+//     (está em C:\Users\jbaca\AppData\Local\PlatformIO\build\Monitora_Links\esp32)
 //=============================================================================
 
 #include "network/ota.h"

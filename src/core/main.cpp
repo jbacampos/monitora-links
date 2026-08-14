@@ -253,9 +253,13 @@ void loop() {
       } else if (strcmp(command.text, "/reboot") == 0) {
          DBG("Comando retirado da fila: %s\n", command.text);
          queueTelegramMessage("🔄 Reiniciando o monitor...",TELEGRAM_ACTION_REBOOT);
+
+      } else if (strcmp(command.text, "/ota") == 0) {
+         DBG("Comando retirado da fila: %s\n", command.text);
+         queueTelegramMessage("🔄 Atualizando o firmware...",TELEGRAM_ACTION_OTA);
       }
    }
-
+   
    LedStatus ledStatus;
    DBG("\nCiclo %lu concluído. Links on-line: %u/%u\n", gCycleCount + 1, online, gPerfil->numLinks);
    if (online == gPerfil->numLinks)
@@ -271,10 +275,27 @@ void loop() {
 
    // Mantém o LED exibindo o estado consolidado do sistema
    // por alguns segundos antes de iniciar um novo ciclo.
-   // Isso facilita a inspeção visual do monitor.
-   // DBG("\nledStatus: %s\n", ledStatus == LED_ALL_UP ? "TODOS OS LINKS ON-LINE" : (ledStatus == LED_ALL_DOWN ? "TODOS OS LINKS OFF-LINE" : "ALGUNS LINKS OFF-LINE"));
-   DBG("\nVai dormir por %u milissegundos...\n", LED_STATUS_HOLD_MS);
-   delay(LED_STATUS_HOLD_MS);
+   // Primeiro, faz metade do delay() previsto e testa se há alguma ação pendente do Monitor. Se houver, executa-a imediatamente.
+   DBG("\nVai dormir por %u milissegundos...\n", LED_STATUS_HOLD_MS / 2);
+   delay(LED_STATUS_HOLD_MS / 2);
+   
+   MonitorAction action;
+   if (getMonitorAction(action)) {
+      switch (action) {
+         case ACTION_REBOOT:
+               DBG("Executando ACTION_REBOOT no Monitor.\n");
+               doReboot();
+         case ACTION_OTA:
+               DBG("Executando ACTION_OTA no Monitor.\n");
+               doOta();
+         default:
+               DBG("Monitor action desconhecido: %d\n", action);
+      }
+   }
+
+   // Segunda metade do delay():
+   DBG("\nVai dormir por mais %u milissegundos...\n", LED_STATUS_HOLD_MS / 2);
+   delay(LED_STATUS_HOLD_MS / 2);
 
 }
 

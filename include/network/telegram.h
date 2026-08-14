@@ -17,7 +17,6 @@ extern TelegramUpdate gUpdate;
 
 typedef struct {
    String message;
-   void (*deferredFunction)() = nullptr;
 } CommandResult;
 
 
@@ -28,8 +27,6 @@ CommandResult cmdLog(const String &args);
 CommandResult cmdNotify(const String &args);
 CommandResult cmdQuiet(const String &args);
 CommandResult cmdLed(const String &args);
-CommandResult cmdOta(const String &args);
-CommandResult cmdReboot(const String &args);
 void doReboot();
 void doOta();
 
@@ -51,8 +48,6 @@ bool telegramGetUpdates(TelegramUpdate *upd);
 //=============================================================================
 // Processamento
 //=============================================================================
-
-CommandResult telegramProcessCommand(const String &text);
 
 uint8_t splitArgs(const String &args, String &arg1, String &arg2, String &arg3);
 bool parseTime(const String &str, uint16_t *minutes);

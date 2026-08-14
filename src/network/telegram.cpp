@@ -19,11 +19,6 @@
 
 typedef CommandResult (*CommandHandler)(const String &args);
 
-typedef struct {
-   const char *comando;
-   CommandHandler handler;
-} TelegramCommand;
-
 //=============================================================================
 // Protótipos privados
 //=============================================================================
@@ -39,45 +34,12 @@ CommandResult cmdLog(const String &args);
 CommandResult cmdNotify(const String &args);
 CommandResult cmdQuiet(const String &args);
 CommandResult cmdLed(const String &args);
-CommandResult cmdReboot(const String &args);
-CommandResult cmdOta(const String &args);
 void doReboot();
 void doOta();
 
 //=============================================================================
 // Comandos
 //=============================================================================
-
-static const TelegramCommand COMMANDS[] = { 
-   { "/h", cmdHelp },   { "/help", cmdHelp },     { "/s", cmdStatus }, { "/status", cmdStatus },
-   { "/e", cmdStats },  { "/stats", cmdStats },   { "/l", cmdLog },    { "/log", cmdLog },
-   { "/n", cmdNotify }, { "/notify", cmdNotify }, { "/q", cmdQuiet },  { "/quiet", cmdQuiet },
-   { "/led", cmdLed },  { "/reboot", cmdReboot }, { "/ota", cmdOta } };
-
-constexpr uint8_t NUM_COMMANDS = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
-
-CommandResult telegramProcessCommand(const String &text) {
-   String comando = text;
-   String args;
-   CommandResult result;
-
-   int p = text.indexOf(' ');
-
-   if (p >= 0) {
-      comando = text.substring(0, p);
-      args = text.substring(p + 1);
-      args.trim();
-   }
-
-   for (uint8_t i = 0; i < NUM_COMMANDS; i++) {
-      if (comando.equalsIgnoreCase(COMMANDS[i].comando)) {
-         result = COMMANDS[i].handler(args);
-         return result;
-      }
-   }
-   result.message = "Comando desconhecido:\n" + comando + "\nDigite /help";
-   return result;
-}
 
 CommandResult cmdHelp(const String &) {
 
@@ -249,22 +211,6 @@ CommandResult cmdLed(const String &args) {
                        "/led\n"
                        "/led on|off|q[uiet]";
    }
-
-   return result;
-}
-
-CommandResult cmdReboot(const String &) {
-   CommandResult result;
-   result.deferredFunction = doReboot;
-   result.message = "🔄 Reiniciando o monitor...";
-   return result;
-}
-
-CommandResult cmdOta(const String &) {
-   CommandResult result;
-
-   result.message = "⬇️ Iniciando atualização do firmware...";
-   result.deferredFunction = doOta;
 
    return result;
 }

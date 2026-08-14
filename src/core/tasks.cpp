@@ -13,8 +13,9 @@ static TaskHandle_t ledTaskHandle = nullptr;
 static TaskHandle_t telegramTaskHandle = nullptr;
 static SemaphoreHandle_t runtimeMutex = nullptr;
 
-static QueueHandle_t commandQueue = nullptr;
 static QueueHandle_t telegramMessageQueue = nullptr;
+static QueueHandle_t monitorCommandQueue = nullptr;
+static QueueHandle_t monitorActionQueue = nullptr;
 
 static volatile bool serviceWindowOpen = false;
 static volatile bool telegramBusy = false;
@@ -79,14 +80,27 @@ void initLedTask() {
 
 void initTelegramTask() {
 
-   commandQueue = xQueueCreate(8, sizeof(MonitorCommand));
    telegramMessageQueue = xQueueCreate(4, sizeof(TelegramMessage));
-
-   if (commandQueue == nullptr) {
-      DBG("ERRO ao criar CommandQueue\n");
+   if (telegramMessageQueue == nullptr) {
+      DBG("ERRO ao criar telegramMessageQueue\n");
       return;
    }
-   DBG("CommandQueue criada com sucesso\n");
+   DBG("telegramMessageQueue criada com sucesso\n");
+
+   monitorCommandQueue = xQueueCreate(8, sizeof(MonitorCommand));
+   if (monitorCommandQueue == nullptr) {
+      DBG("ERRO ao criar monitorCommandQueue\n");
+      return;
+   }
+   DBG("monitorCommandQueue criada com sucesso\n");
+
+   monitorActionQueue = xQueueCreate(1, sizeof(MonitorAction));
+   if (monitorActionQueue == nullptr) {
+      DBG("ERRO ao criar monitorActionQueue\n");
+      return;
+   }
+
+   DBG("monitorActionQueue criada com sucesso\n");
 
    BaseType_t result = xTaskCreatePinnedToCore(telegramTask, "TelegramTask", 8192, nullptr, 1, &telegramTaskHandle, 0);
 
@@ -132,14 +146,19 @@ static void telegramTask(void *parameter) {
          }
 
          if (message.action == TELEGRAM_ACTION_REBOOT) {
-            DBG("Mensagem enviada. Executando reboot.\n");
-            doReboot();
+            DBG("Mensagem enviada. Solicitando reboot ao Monitor.\n");
+
+            if (!queueMonitorAction(ACTION_REBOOT))
+               DBG("ERRO ao colocar ACTION_REBOOT na fila\n");
          }
 
          if (message.action == TELEGRAM_ACTION_OTA) {
-            DBG("Mensagem enviada. Executando OTA.\n");
-            doOta();
+            DBG("Mensagem enviada. Solicitando OTA ao Monitor.\n");
+
+            if (!queueMonitorAction(ACTION_OTA))
+               DBG("ERRO ao colocar ACTION_OTA na fila\n");
          }
+
       }
 
       // Envia primeiro as notificações pendentes
@@ -182,26 +201,7 @@ static void telegramTask(void *parameter) {
          DBG("Falha ao colocar comando na fila: %s\n", upd.text.c_str());
       }
 
-      // CommandResult cmdResult = telegramProcessCommand(upd.text);
-
-      // if (!cmdResult.message.isEmpty()) {
-
-      //    DBG("Vai enviar resposta ao comando...\n");
-
-      //    if (!telegramSendMessage(cmdResult.message)) {
-      //       DBG("Falha ao enviar resposta ao comando\n");
-
-      //       telegramBusy = false;
-      //       continue;
-      //    }
-      // }
-
-      // if (cmdResult.deferredFunction != nullptr) {
-      //    DBG("Executando deferredFunction\n");
-      //    cmdResult.deferredFunction();
-      // }
-
-      // Só libera depois de terminar tudo, inclusive OTA.
+      // Libera a conexão para o próximo ciclo
       telegramBusy = false;
    }
 }
@@ -253,7 +253,7 @@ void unlockRuntime() {
 
 bool queueMonitorCommand(const char *text) {
 
-   if (commandQueue == nullptr)
+   if (monitorCommandQueue == nullptr)
       return false;
 
    MonitorCommand command = {};
@@ -263,15 +263,15 @@ bool queueMonitorCommand(const char *text) {
 
    DBG("Comando colocado na fila: %s\n", command.text);
 
-   return xQueueSend(commandQueue, &command, 0) == pdPASS;
+   return xQueueSend(monitorCommandQueue, &command, 0) == pdPASS;
 }
 
 bool getMonitorCommand(MonitorCommand &command) {
 
-   if (commandQueue == nullptr)
+   if (monitorCommandQueue == nullptr)
       return false;
 
-   return xQueueReceive(commandQueue, &command, 0) == pdPASS;
+   return xQueueReceive(monitorCommandQueue, &command, 0) == pdPASS;
 }
 
 bool queueTelegramMessage(const char *text, TelegramAction action) {
@@ -301,4 +301,21 @@ bool getTelegramMessage(TelegramMessage &message) {
    DBG("Mensagem do Telegram retirada da fila: %s\n", message.text);
 
    return true;
+}
+
+
+bool queueMonitorAction(MonitorAction action) {
+
+   if (monitorActionQueue == nullptr)
+      return false;
+
+   return xQueueSend(monitorActionQueue, &action, 0) == pdPASS;
+}
+
+bool getMonitorAction(MonitorAction &action) {
+
+   if (monitorActionQueue == nullptr)
+      return false;
+
+   return xQueueReceive(monitorActionQueue, &action, 0) == pdPASS;
 }
