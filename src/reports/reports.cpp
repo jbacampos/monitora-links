@@ -18,11 +18,7 @@ String buildStatus() {
 
    msg += "<b><u>Links\n\n</u></b>";
 
-   lockRuntime();
-
    RuntimeData runtime = gRuntime;
-
-   unlockRuntime();
 
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
       const LinkConfig &cfg = gPerfil->links[i];
@@ -236,11 +232,7 @@ String buildStatistics(uint16_t dias) {
 String buildSystemSummary() {
    String msg;
 
-   lockRuntime();
-
    RuntimeData runtime = gRuntime;
-
-   unlockRuntime();
 
    msg += "\n<b><u>Notificações</u></b>";
    msg += buildInfoNotif();

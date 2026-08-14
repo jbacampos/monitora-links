@@ -2,7 +2,6 @@
 // ota.cpp
 //
 // Atualização OTA do firmware por HTTP/HTTPS.
-// Compatível com ESP32 e ESP8266.
 //
 // A função updateOta():
 //   - baixa o firmware indicado pela URL;

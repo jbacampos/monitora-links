@@ -103,12 +103,8 @@ void onBoot() {
    BootReason bootReason;
    time_t rebootStartTime;
 
-   lockRuntime();
-
    bootReason = gRuntime.bootReason;
    rebootStartTime = gRuntime.rebootStartTime;
-
-   unlockRuntime();
 
    DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(bootReason));
    if ((bootReason == BOOT_AFTER_REBOOT_COMMAND || bootReason == BOOT_AFTER_OTA) && rebootStartTime != 0) {
@@ -147,13 +143,9 @@ void onBoot() {
 
    queueNotification(n);
 
-   lockRuntime();
-
    gRuntime.bootReason = BOOT_POWERON;
    gRuntime.rebootStartTime = now();
    gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
 
-   unlockRuntime();
-   
 }

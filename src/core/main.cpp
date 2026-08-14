@@ -146,15 +146,11 @@ void loop() {
       ledUpdate();
       DBG("\n=== %s ===\n", gPerfil->links[i].nome);
 
-      lockRuntime();
       uint8_t retries = (gRuntime.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
-      unlockRuntime();
       
       status[i] = testConnection(gPerfil->links[i].ssid, gPerfil->links[i].senha, &rssi, retries);
 
-      lockRuntime();
       wifiFailCycles = gRuntime.links[i].wifiFailCycles;
-      unlockRuntime();
 
       // DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
       if (status[i] == LINK_WIFI_FAIL) {
@@ -164,9 +160,7 @@ void loop() {
 
          if (wifiFailCycles < WIFI_FAIL_CYCLES) {
             DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", wifiFailCycles, WIFI_FAIL_CYCLES);
-            lockRuntime();
             gRuntime.links[i].wifiFailCycles = wifiFailCycles;
-            unlockRuntime();
             continue;   // não chama processLink()
 
          }
@@ -177,15 +171,11 @@ void loop() {
 
       LinkState state;
 
-      lockRuntime();
       state = gRuntime.links[i];
-      unlockRuntime();
 
       processLinkState(&state, i, status[i], rssi);
 
-      lockRuntime();
       gRuntime.links[i] = state;
-      unlockRuntime();
 
       // Verifica se existe um link que caiu durante
       // o horário de silêncio e gera a notificação

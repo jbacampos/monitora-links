@@ -217,14 +217,10 @@ CommandResult cmdLed(const String &args) {
 
 void doReboot() {
 
-   lockRuntime();
-
    gRuntime.bootReason = BOOT_AFTER_REBOOT_COMMAND;
    gRuntime.rebootStartTime = now();
    gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
-
-   unlockRuntime();
 
    ESP.restart();
 }
@@ -265,14 +261,10 @@ void doOta()
       return;
    }
 
-   lockRuntime();
-
    gRuntime.rebootStartTime = now();
    gRuntime.bootReason = BOOT_AFTER_OTA;
    gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
-
-   unlockRuntime();
 
    ESP.restart();
 }
