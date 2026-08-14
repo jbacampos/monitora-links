@@ -33,6 +33,11 @@ static void processMonitorCommand(const MonitorCommand &command) {
       CommandResult result = cmdStatus("");
       queueTelegramMessage(result.message.c_str());
 
+   } else if (strncmp(command.text, "/led", 4) == 0) {
+
+      CommandResult result = cmdLed(commandArgs(command));
+      queueTelegramMessage(result.message.c_str());
+
    } else if (strncmp(command.text, "/e", 2) == 0 || strncmp(command.text, "/stats", 6) == 0) {
       CommandResult result = cmdStats(commandArgs(command));
       queueTelegramMessage(result.message.c_str());
@@ -49,11 +54,6 @@ static void processMonitorCommand(const MonitorCommand &command) {
    } else if (strncmp(command.text, "/q", 2) == 0 || strncmp(command.text, "/quiet", 6) == 0) {
 
       CommandResult result = cmdQuiet(commandArgs(command));
-      queueTelegramMessage(result.message.c_str());
-
-   } else if (strncmp(command.text, "/led", 4) == 0) {
-
-      CommandResult result = cmdLed(commandArgs(command));
       queueTelegramMessage(result.message.c_str());
 
    } else if (strcmp(command.text, "/h") == 0 || strcmp(command.text, "/help") == 0) {
