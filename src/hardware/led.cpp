@@ -105,6 +105,9 @@ static void showStatus() {
    case LED_ALL_DOWN:
       setColor(LED_RED); // Vermelho
       break;
+   case LED_OTA:
+      setColor(LED_CYAN); // Ciano
+      break;
    }
 }
 

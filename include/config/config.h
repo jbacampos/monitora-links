@@ -13,7 +13,8 @@
 // #define FW_VERSION "1.0.0"   // Versão inicial estável
 // #define FW_VERSION "1.1.0"   // Inclusão do suporte a OTA
 // #define FW_VERSION "1.1.1"   // Inicia suporte a multicore
-#define FW_VERSION "1.1.2"   // Abandona multicore e define ESP32 como plataforma padrão.
+// #define FW_VERSION "1.1.2"   // Abandona multicore e define ESP32 como plataforma padrão.
+#define FW_VERSION "1.1.3"   // Define led ciano para OTA
 
 // Incrementar sempre que mudar algum arquivo de configuração, para forçar a sua recriação:
 #define STATE_VERSION 5 

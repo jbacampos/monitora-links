@@ -233,6 +233,9 @@ void loop() {
    
    MonitorAction action;
    if (getMonitorAction(action)) {
+      
+      closeServiceWindow();
+
       switch (action) {
          case ACTION_REBOOT:
             DBG("Executando ACTION_REBOOT no Monitor.\n");
@@ -240,6 +243,7 @@ void loop() {
             break;
          case ACTION_OTA:
             DBG("Executando ACTION_OTA no Monitor.\n");
+            ledEndCycle(LED_OTA);
             doOta();
             break;
          default:

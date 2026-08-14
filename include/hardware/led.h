@@ -6,7 +6,7 @@
 #include "network/notify.h"
 #include "core/types.h"
 
-enum LedStatus : uint8_t { LED_ALL_UP, LED_PARTIAL_DOWN, LED_ALL_DOWN };
+enum LedStatus : uint8_t { LED_ALL_UP, LED_PARTIAL_DOWN, LED_ALL_DOWN, LED_OTA };
 
 enum LedColor : uint8_t {
    LED_BLANK,

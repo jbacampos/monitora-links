@@ -72,9 +72,9 @@ static String buildMessage(const PendingNotification &n) {
 
       msg += EmojiReboot;
       if (n.bootReason == BOOT_POWERON)
-         msg += " Monitor religado\n\n";
+         msg += " Monitor religado\n";
       else 
-         msg += " Monitor reiniciado\n\n";
+         msg += " Monitor reiniciado\n";
 
       if (n.inicio) {
          msg += "Inicio      :  ";
@@ -102,6 +102,11 @@ static String buildMessage(const PendingNotification &n) {
 
       msg += "Evento    :  #";
       msg += String(n.evento);
+      msg += "\n";
+
+      msg += "Versão    :  ";
+      msg += FW_VERSION;
+      msg += "\n";
 
    }
    return msg;

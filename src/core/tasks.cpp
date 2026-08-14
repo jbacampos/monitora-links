@@ -133,6 +133,8 @@ static void telegramTask(void *parameter) {
       // A partir daqui, a task está usando a conexão.
       telegramBusy = true;
 
+      bool actionRequested = false;
+      
       // Envia mensagens produzidas pelo Monitor
       TelegramMessage message = {};
 
@@ -147,20 +149,28 @@ static void telegramTask(void *parameter) {
 
          if (message.action == TELEGRAM_ACTION_REBOOT) {
             DBG("Mensagem enviada. Solicitando reboot ao Monitor.\n");
-
-            if (!queueMonitorAction(ACTION_REBOOT))
+            if (queueMonitorAction(ACTION_REBOOT))
+               actionRequested = true;
+            else
                DBG("ERRO ao colocar ACTION_REBOOT na fila\n");
+
          }
 
          if (message.action == TELEGRAM_ACTION_OTA) {
             DBG("Mensagem enviada. Solicitando OTA ao Monitor.\n");
-
-            if (!queueMonitorAction(ACTION_OTA))
+            if (queueMonitorAction(ACTION_OTA))
+               actionRequested = true;
+            else
                DBG("ERRO ao colocar ACTION_OTA na fila\n");
          }
-
       }
 
+      if (actionRequested) {
+         telegramBusy = false;
+         proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
+         continue;
+      }      
+      
       // Envia primeiro as notificações pendentes
       if (hasPendingNotifications()) {
          DBG("TelegramTask: verificando notificacoes pendentes\n");
