@@ -16,17 +16,66 @@
 #include "reports/reports.h"
 #include "reports/stats.h"
 
-constexpr uint8_t MAX_UPDATES_PER_CYCLE = 10;
+static String commandArgs(const MonitorCommand &command)
+{
+   String text = command.text;
+   int p = text.indexOf(' ');
+   if (p < 0)
+      return "";
+   String args = text.substring(p + 1);
+   args.trim();
+   return args;
+}
+
+static void processMonitorCommand(const MonitorCommand &command) {
+
+   if (strcmp(command.text, "/s") == 0 || strcmp(command.text, "/status") == 0) {
+      CommandResult result = cmdStatus("");
+      queueTelegramMessage(result.message.c_str());
+
+   } else if (strncmp(command.text, "/e", 2) == 0 || strncmp(command.text, "/stats", 6) == 0) {
+      CommandResult result = cmdStats(commandArgs(command));
+      queueTelegramMessage(result.message.c_str());
+
+   } else if (strncmp(command.text, "/l", 2) == 0 || strncmp(command.text, "/log", 4) == 0) {
+      CommandResult result = cmdLog(commandArgs(command));
+      queueTelegramMessage(result.message.c_str());
+
+   } else if (strncmp(command.text, "/n", 2) == 0 || strncmp(command.text, "/notify", 7) == 0) {
+
+      CommandResult result = cmdNotify(commandArgs(command));
+      queueTelegramMessage(result.message.c_str());
+
+   } else if (strncmp(command.text, "/q", 2) == 0 || strncmp(command.text, "/quiet", 6) == 0) {
+
+      CommandResult result = cmdQuiet(commandArgs(command));
+      queueTelegramMessage(result.message.c_str());
+
+   } else if (strncmp(command.text, "/led", 4) == 0) {
+
+      CommandResult result = cmdLed(commandArgs(command));
+      queueTelegramMessage(result.message.c_str());
+
+   } else if (strcmp(command.text, "/h") == 0 || strcmp(command.text, "/help") == 0) {
+      CommandResult result = cmdHelp("");
+      queueTelegramMessage(result.message.c_str());
+
+   } else if (strcmp(command.text, "/reboot") == 0) {
+      queueTelegramMessage("🔄 Reiniciando o monitor...",TELEGRAM_ACTION_REBOOT);
+
+   } else if (strcmp(command.text, "/ota") == 0) {
+      queueTelegramMessage("🔄 Atualizando o firmware...",TELEGRAM_ACTION_OTA);
+   }
+
+}
 
 void setup() {
 
    Serial.begin(115200);
 
-   String msg = "\n==========================\n";
-   msg += "Sistema iniciado\n";
-   msg += "==========================\n";
-
-   DBG("%s", msg.c_str());
+   DBG("\n==========================\n"
+      "Sistema iniciado\n"
+      "==========================\n");
 
    ledInit();
    ledStartup();
@@ -62,8 +111,6 @@ void setup() {
 
    initSystem();
    ledSystemReady();
-
-   DBG("setup() executando no core %d\n", xPortGetCoreID());
 
    onBoot();
 
@@ -116,7 +163,7 @@ void loop() {
          DBG("LINK_WIFI_FAIL no ciclo %d. Máximo de ciclos ignorados = %d\n", wifiFailCycles, WIFI_FAIL_CYCLES);
 
          if (wifiFailCycles < WIFI_FAIL_CYCLES) {
-            DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", gRuntime.links[i].wifiFailCycles, WIFI_FAIL_CYCLES);
+            DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", wifiFailCycles, WIFI_FAIL_CYCLES);
             lockRuntime();
             gRuntime.links[i].wifiFailCycles = wifiFailCycles;
             unlockRuntime();
@@ -171,94 +218,9 @@ void loop() {
 
    MonitorCommand command = {};
 
-   while (getMonitorCommand(command)) {
-      if (strcmp(command.text, "/s") == 0) {
-         CommandResult result = cmdStatus("");
-         DBG("Comando retirado da fila: %s\n", command.text);
-         queueTelegramMessage(result.message.c_str());
-      } else if (strncmp(command.text, "/e", 2) == 0 ||
-         strncmp(command.text, "/stats", 6) == 0) {
-         String text = command.text;
-         String args;
-         int p = text.indexOf(' ');
-         if (p >= 0) {
-            args = text.substring(p + 1);
-            args.trim();
-         }
-         CommandResult result = cmdStats(args);
-         queueTelegramMessage(result.message.c_str());
-      } else if (strncmp(command.text, "/l", 2) == 0 ||
-         strncmp(command.text, "/log", 4) == 0) {
-         String text = command.text;
-         String args;
-         int p = text.indexOf(' ');
-         if (p >= 0) {
-            args = text.substring(p + 1);
-            args.trim();
-         }
-         CommandResult result = cmdLog(args);
-         queueTelegramMessage(result.message.c_str());
-      } else if (strncmp(command.text, "/n", 2) == 0 ||
-         strncmp(command.text, "/notify", 7) == 0) {
+   while (getMonitorCommand(command))
+      processMonitorCommand(command);
 
-         String text = command.text;
-         String args;
-
-         int p = text.indexOf(' ');
-
-         if (p >= 0) {
-            args = text.substring(p + 1);
-            args.trim();
-         }
-
-         CommandResult result = cmdNotify(args);
-
-         queueTelegramMessage(result.message.c_str());
-      } else if (strncmp(command.text, "/q", 2) == 0 ||
-         strncmp(command.text, "/quiet", 6) == 0) {
-
-         String text = command.text;
-         String args;
-
-         int p = text.indexOf(' ');
-
-         if (p >= 0) {
-            args = text.substring(p + 1);
-            args.trim();
-         }
-
-         CommandResult result = cmdQuiet(args);
-
-         queueTelegramMessage(result.message.c_str());
-
-      } else if (strncmp(command.text, "/led", 4) == 0) {
-
-         String text = command.text;
-         String args;
-
-         int p = text.indexOf(' ');
-
-         if (p >= 0) {
-            args = text.substring(p + 1);
-            args.trim();
-         }
-         CommandResult result = cmdLed(args);
-         queueTelegramMessage(result.message.c_str());
-
-      } else if (strcmp(command.text, "/h") == 0 ||
-         strcmp(command.text, "/help") == 0) {
-         CommandResult result = cmdHelp("");
-         queueTelegramMessage(result.message.c_str());
-
-      } else if (strcmp(command.text, "/reboot") == 0) {
-         DBG("Comando retirado da fila: %s\n", command.text);
-         queueTelegramMessage("🔄 Reiniciando o monitor...",TELEGRAM_ACTION_REBOOT);
-
-      } else if (strcmp(command.text, "/ota") == 0) {
-         DBG("Comando retirado da fila: %s\n", command.text);
-         queueTelegramMessage("🔄 Atualizando o firmware...",TELEGRAM_ACTION_OTA);
-      }
-   }
    
    LedStatus ledStatus;
    DBG("\nCiclo %lu concluído. Links on-line: %u/%u\n", gCycleCount + 1, online, gPerfil->numLinks);
@@ -283,13 +245,16 @@ void loop() {
    if (getMonitorAction(action)) {
       switch (action) {
          case ACTION_REBOOT:
-               DBG("Executando ACTION_REBOOT no Monitor.\n");
-               doReboot();
+            DBG("Executando ACTION_REBOOT no Monitor.\n");
+            doReboot();
+            break;
          case ACTION_OTA:
-               DBG("Executando ACTION_OTA no Monitor.\n");
-               doOta();
+            DBG("Executando ACTION_OTA no Monitor.\n");
+            doOta();
+            break;
          default:
-               DBG("Monitor action desconhecido: %d\n", action);
+            DBG("Monitor action desconhecido: %d\n", action);
+            break;
       }
    }
 
