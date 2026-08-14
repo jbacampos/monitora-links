@@ -353,8 +353,11 @@ void checkNotificationPolicy() {
    }
 
    if (modificou) {
+      lockRuntime();
       gRuntime.saveCount++;
       saveStorage(FILE_RUNTIME, gRuntime);
+      unlockRuntime();
+
    }
    
 }
