@@ -1,27 +1,27 @@
-#ifndef SECRETS_H
-#define SECRETS_H
+	#ifndef SECRETS_H
+	#define SECRETS_H
 
-/******************************************************************************
- * TELEGRAM
- ******************************************************************************/
 
-#define TELEGRAM_BOT_TOKEN "your bot token here"
-#define TELEGRAM_CHAT_ID "your chat id here"
+	/******************************************************************************
+	 * TELEGRAM
+	 ******************************************************************************/
 
-//=============================================================================
-// Links monitorados
-//=============================================================================
+	#define TLGRM_TOKEN "098098089:yyyyyyyyyyyyyyyyyyyyyyy"
+	#define TLGRM_CHAT_ID "-098887080"
 
-#define LINK_1      "xxxxxxxxx"
-#define SSID_1      "yyyyyyyyy"
-#define PASSWORD_1  "zzzzzzzzz"
+	//=============================================================================
+	// Links monitorados
+	//=============================================================================
 
-#define LINK_2      "xxxxxxxxx"
-#define SSID_2      "yyyyyyyyy"
-#define PASSWORD_2  "zzzzzzzzz"
+	#define Link1_PASSWORD      "xxxxxxxxxxxxxxx"
+	#define Link2_PASSWORD     "yyyyyyyyyyyyyyyy"
 
-#define LINK_3      "xxxxxxxxx"
-#define SSID_3      "yyyyyyyyy"
-#define PASSWORD_3  "zzzzzzzzz"
+	//=============================================================================
+	// Update OTA
+	//=============================================================================
 
-#endif
+	#define OTA_VERSION_URL "https://api.github.com/repos/jbacampos/monitora-links/releases/latest"
+
+	#define OTA_FIRMWARE_URL "https://github.com/jbacampos/monitora-links/releases/latest/download/Monitora_Links.bin"
+
+	#endif
