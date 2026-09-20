@@ -98,10 +98,13 @@ void setup() {
          delay(1000);
    }
 
-   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+   bool clockSynced = false;
+   for (uint8_t i = 0; i < gPerfil->numLinks && !clockSynced; i++) {
       if (connectWifi(gPerfil->links[i].ssid, gPerfil->links[i].senha)) {
-         syncClock();
-         break;
+         clockSynced = syncClock();
+         if (!clockSynced)
+            disconnectWifi();
+         continue;
       }
 
       DBG("Falha na conexão Wi-Fi inicial para sincronizar relógio. "
@@ -109,6 +112,20 @@ void setup() {
 
       delay(5000);
    }
+
+   for (uint8_t tentativa = 0; !clockSynced && tentativa < 3; tentativa++) {
+      DBG("Relógio ainda inválido. Nova tentativa de sincronização (%u/3)...\n", tentativa + 1);
+      if (WiFi.status() != WL_CONNECTED) {
+         if (!connectWifi(gPerfil->links[0].ssid, gPerfil->links[0].senha))
+            continue;
+      }
+      clockSynced = syncClock();
+      if (!clockSynced)
+         delay(1000);
+   }
+
+   if (!clockSynced)
+      DBG("AVISO: não foi possível sincronizar o relógio durante o boot.\n");
 
    initSystem();
    ledSystemReady();

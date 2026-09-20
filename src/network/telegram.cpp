@@ -304,7 +304,9 @@ bool telegramSendMessage(const String &text) {
 
    WiFiClientSecure client;
    client.setInsecure();
+   client.setTimeout(5000);
    HTTPClient http;
+   http.setTimeout(5000);
 
    if (!http.begin(client, url)) {
       DBG("Telegram: erro em http.begin()\n");
@@ -345,7 +347,9 @@ bool telegramGetUpdates(TelegramUpdate *upd) {
 
    WiFiClientSecure client;
    client.setInsecure();
+   client.setTimeout(5000);
    HTTPClient http;
+   http.setTimeout(5000);
 
    if (!http.begin(client, url)) {
       DBG("Telegram: erro em http.begin()\n");

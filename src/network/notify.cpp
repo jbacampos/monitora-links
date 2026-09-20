@@ -246,6 +246,19 @@ void sendPendingNotifications() {
 
       unlockRuntime();
 
+      if ((n.tipo == NOTIFY_BOOT || n.tipo == NOTIFY_UP) && n.fim < 1700000000) {
+         DBG("Descartando notificacao #%u com horario invalido\n", n.evento);
+         lockRuntime();
+         if (gRuntime.pendingNotifications[i].pending &&
+             gRuntime.pendingNotifications[i].evento == n.evento) {
+            gRuntime.pendingNotifications[i].pending = false;
+            gRuntime.saveCount++;
+            saveStorage(FILE_RUNTIME, gRuntime);
+         }
+         unlockRuntime();
+         continue;
+      }
+
       String msg = buildMessage(n);
 
       if (!telegramSendMessage(msg)) {

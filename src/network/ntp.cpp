@@ -49,7 +49,7 @@ String formatDateTime(time_t t, DateTimeFormat format) {
                                        "mai", "jun", "jul", "ago",
                                        "set", "out", "nov", "dez"};
 
-   if (t == 0)
+   if (t < 1700000000)
       return "desconhecido";
 
    t += GMT_OFFSET_SEC;

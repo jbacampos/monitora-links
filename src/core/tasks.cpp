@@ -22,6 +22,14 @@ static volatile bool serviceWindowOpen = false;
 static volatile bool telegramBusy = false;
 static void telegramTask(void *parameter);
 
+static void acknowledgeTelegramUpdate(uint32_t updateId) {
+   lockRuntime();
+   gRuntime.telegramUpdateId = updateId;
+   gRuntime.saveCount++;
+   saveStorage(FILE_RUNTIME, gRuntime);
+   unlockRuntime();
+}
+
 //=============================================================================
 // Led
 //=============================================================================
@@ -188,20 +196,17 @@ static void telegramTask(void *parameter) {
 
       if (upd.updateId == 0 || upd.chatId.isEmpty() || upd.text.isEmpty()) {
          DBG("Telegram: update vazio ou inválido - ignorando.\n");
+         if (upd.updateId != 0)
+            acknowledgeTelegramUpdate(upd.updateId);
          telegramBusy = false;
          continue;
       }
 
       DBG("Update recebido = %u - %s\n", upd.updateId, upd.text.c_str());
 
-      lockRuntime();
-      gRuntime.telegramUpdateId = upd.updateId;
-      gRuntime.saveCount++;
-      saveStorage(FILE_RUNTIME, gRuntime);
-      unlockRuntime();
-
       if (!isAuthorizedChat(upd.chatId)) {
          telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
+         acknowledgeTelegramUpdate(upd.updateId);
 
          telegramBusy = false;
          continue;
@@ -211,6 +216,8 @@ static void telegramTask(void *parameter) {
 
       if (!queueMonitorCommand(upd.text.c_str())) {
          DBG("Falha ao colocar comando na fila: %s\n", upd.text.c_str());
+      } else {
+         acknowledgeTelegramUpdate(upd.updateId);
       }
 
       // Libera a conexão para o próximo ciclo
