@@ -15,7 +15,8 @@
 // #define FW_VERSION "1.1.1"   // Inicia suporte a multicore
 // #define FW_VERSION "1.1.2"   // Abandona multicore e define ESP32 como plataforma padrão.
 // #define FW_VERSION "1.1.3"   // Define led ciano para OTA
-#define FW_VERSION "1.2.0"   // Multicore concluído, OTA aprimorado, suporte a notificações pendentes, melhorias no código e na estabilidade do sistema.
+// #define FW_VERSION "1.2.0"   // Multicore concluído, OTA aprimorado, suporte a notificações pendentes, melhorias no código e na estabilidade do sistema.
+#define FW_VERSION "1.2.1"   // Revisado e melhorado pelo Codex
 
 // Incrementar sempre que mudar algum arquivo de configuração, para forçar a sua recriação:
 #define STATE_VERSION 5 
@@ -26,7 +27,7 @@
 
 #define DEV_MODE true
 #define ENABLE_SLEEP false 
-      // Não usado por ora. Serve apenas para economizar energia, caso aalimentação seja por bateria
+      // Não usado por ora. Serve apenas para economizar energia, caso alimentação seja por bateria
 
 
 /*********************************************************************
