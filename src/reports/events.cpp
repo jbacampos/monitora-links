@@ -16,7 +16,8 @@
 
 void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo, int16_t rssi) {
 
-   state->eventoAtual = reserveEventId(true);   
+   state->eventoAtual = reserveEventId(true);
+   state->downNotificationSent = false;
 
    if (clockIsValid())
       state->inicioFalha = now();
@@ -51,6 +52,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
 
    state->ultimaMudanca = fim;
    state->ultimoRSSI = rssi;
+   state->downNotificationSent = false;
 
    DBG("\nEvento #%u encerrado\n", state->eventoAtual);
    DBG("Operadora : %s\n", gPerfil->links[link].nome);
@@ -92,6 +94,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
 
    state->eventoAtual = 0;
    state->inicioFalha = 0;
+   state->downNotificationSent = false;
 }
 
 void onBoot() {

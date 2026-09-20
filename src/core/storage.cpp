@@ -65,7 +65,12 @@ void createDefaultRuntime() {
    gRuntime.header.magic = RUNTIME_MAGIC;
    gRuntime.header.version = RUNTIME_VERSION;
 
-   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+   uint8_t linkCount = MAX_LINKS;
+   if (gPerfil != nullptr) {
+      linkCount = gPerfil->numLinks;
+   }
+
+   for (uint8_t i = 0; i < linkCount; i++) {
       gRuntime.links[i].status = LINK_ONLINE;
    }
    gRuntime.saveCount++;

@@ -41,5 +41,9 @@ void initRuntimeMutex();
 void lockRuntime();
 void unlockRuntime();
 
+void initConfigMutex();
+void lockConfig();
+void unlockConfig();
+
 void openServiceWindow();
 void closeServiceWindow();

@@ -128,6 +128,8 @@ void queueNotification(const PendingNotification &n) {
       if (!gRuntime.pendingNotifications[i].pending) {
          gRuntime.pendingNotifications[i] = n;
          gRuntime.pendingNotifications[i].pending = true;
+         gRuntime.saveCount++;
+         saveStorage(FILE_RUNTIME, gRuntime);
          adicionou = true;
          break;
       }
@@ -211,7 +213,12 @@ void sendPendingNotifications() {
       return;
    }
 
-   if (!gConfig.notification.enabled) {
+   bool notificationsEnabled;
+   lockConfig();
+   notificationsEnabled = gConfig.notification.enabled;
+   unlockConfig();
+
+   if (!notificationsEnabled) {
       DBG("sendPendingNotifications(): notificacoes DESATIVADAS\n");
       clearPendingNotifications();
       return;
@@ -275,12 +282,24 @@ static uint16_t minutesOfDay(time_t t) {
 }
 
 bool quietHoursEnabled() { 
-   return gConfig.notification.quietEnabled; 
+   lockConfig();
+   bool enabled = gConfig.notification.quietEnabled;
+   unlockConfig();
+   return enabled;
 }
 
 bool inQuietHours(time_t t) {
+   bool quietEnabled;
+   uint16_t ini;
+   uint16_t fim;
 
-   if (!gConfig.notification.quietEnabled)
+   lockConfig();
+   quietEnabled = gConfig.notification.quietEnabled;
+   ini = gConfig.notification.quietStart;
+   fim = gConfig.notification.quietEnd;
+   unlockConfig();
+
+   if (!quietEnabled)
       return false;
 
    if (t == 0) {
@@ -290,9 +309,6 @@ bool inQuietHours(time_t t) {
    }
 
    uint16_t min = minutesOfDay(t);
-
-   uint16_t ini = gConfig.notification.quietStart;
-   uint16_t fim = gConfig.notification.quietEnd;
 
    if (ini < fim)
       return (min >= ini && min < fim);

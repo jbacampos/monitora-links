@@ -12,6 +12,7 @@
 static TaskHandle_t ledTaskHandle = nullptr;
 static TaskHandle_t telegramTaskHandle = nullptr;
 static SemaphoreHandle_t runtimeMutex = nullptr;
+static SemaphoreHandle_t configMutex = nullptr;
 
 static QueueHandle_t telegramMessageQueue = nullptr;
 static QueueHandle_t monitorCommandQueue = nullptr;
@@ -185,6 +186,12 @@ static void telegramTask(void *parameter) {
          continue;
       }
 
+      if (upd.updateId == 0 || upd.chatId.isEmpty() || upd.text.isEmpty()) {
+         DBG("Telegram: update vazio ou inválido - ignorando.\n");
+         telegramBusy = false;
+         continue;
+      }
+
       DBG("Update recebido = %u - %s\n", upd.updateId, upd.text.c_str());
 
       lockRuntime();
@@ -196,11 +203,6 @@ static void telegramTask(void *parameter) {
       if (!isAuthorizedChat(upd.chatId)) {
          telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
 
-         telegramBusy = false;
-         continue;
-      }
-
-      if (upd.text.isEmpty()) {
          telegramBusy = false;
          continue;
       }
@@ -223,8 +225,17 @@ void closeServiceWindow() {
    // Impede que a TelegramTask inicie uma nova operação.
    serviceWindowOpen = false;
 
-   // Se ela já estava trabalhando, espera terminar.
+   // Se ela já estava trabalhando, espera um pouco por ela ser liberada.
+   // Evita bloquear o loop principal indefinidamente em rede instável.
+   const uint32_t timeoutMs = 15000;
+   const uint32_t start = millis();
+
    while (telegramBusy) {
+      if (millis() - start >= timeoutMs) {
+         DBG("closeServiceWindow(): timeout aguardando TelegramTask. Forçando continuidade.\n");
+         telegramBusy = false;
+         break;
+      }
       vTaskDelay(pdMS_TO_TICKS(10));
    }
 }
@@ -243,6 +254,11 @@ void initRuntimeMutex() {
    //    DBG("ERRO ao criar mutex do runtime\n");
 }
 
+void initConfigMutex() {
+
+   configMutex = xSemaphoreCreateMutex();
+}
+
 void lockRuntime() {
 
    // DBG(">>> lockRuntime: tentando\n");
@@ -259,6 +275,16 @@ void unlockRuntime() {
 
    if (runtimeMutex != nullptr)
       xSemaphoreGive(runtimeMutex);
+}
+
+void lockConfig() {
+   if (configMutex != nullptr)
+      xSemaphoreTake(configMutex, portMAX_DELAY);
+}
+
+void unlockConfig() {
+   if (configMutex != nullptr)
+      xSemaphoreGive(configMutex);
 }
 
 bool queueMonitorCommand(const char *text) {

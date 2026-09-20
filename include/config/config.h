@@ -106,10 +106,11 @@ constexpr uint32_t TELEGRAM_GET_UPDATES_INTERVAL = 5000;
  * MONITORAMENTO
  *********************************************************************/
 
-constexpr uint8_t LINK_TEST_RETRIES = 3;
-constexpr uint8_t WIFI_FAIL_CYCLES = 3;
+constexpr uint8_t LINK_TEST_RETRIES = 5;
+constexpr uint8_t WIFI_FAIL_CYCLES = 6;
 constexpr uint16_t RETRY_DELAY_MS = 300;
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 2000;
+constexpr uint32_t WIFI_FAIL_GRACE_SEC = 45;
 
 
 /*********************************************************************
