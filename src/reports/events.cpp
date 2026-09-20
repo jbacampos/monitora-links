@@ -49,10 +49,10 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
 
    uint32_t duracao;
    time_t fim = now();
+   bool shouldNotifyUp = state->downNotificationSent && !inQuietHours();
 
    state->ultimaMudanca = fim;
    state->ultimoRSSI = rssi;
-   state->downNotificationSent = false;
 
    DBG("\nEvento #%u encerrado\n", state->eventoAtual);
    DBG("Operadora : %s\n", gPerfil->links[link].nome);
@@ -67,7 +67,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
    DBG("Fim       : %s\n", formatDateTime(fim).c_str());
    DBG("Duracao   : %s\n", formatDuration(duracao).c_str());
 
-   if (state->downNotificationSent && !inQuietHours()) {
+   if (shouldNotifyUp) {
       PendingNotification n = {};
       n.pending = true;
       n.link = link;
