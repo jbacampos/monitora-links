@@ -16,7 +16,8 @@
 
 void onLinkDown(LinkState *state, LinkId link, LinkStatus motivo, int16_t rssi) {
 
-   state->eventoAtual = reserveEventId(true);   
+   state->eventoAtual = reserveEventId(true);
+   state->downNotificationSent = false;
 
    if (clockIsValid())
       state->inicioFalha = now();
@@ -48,6 +49,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
 
    uint32_t duracao;
    time_t fim = now();
+   bool shouldNotifyUp = state->downNotificationSent && !inQuietHours();
 
    state->ultimaMudanca = fim;
    state->ultimoRSSI = rssi;
@@ -65,7 +67,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
    DBG("Fim       : %s\n", formatDateTime(fim).c_str());
    DBG("Duracao   : %s\n", formatDuration(duracao).c_str());
 
-   if (state->downNotificationSent && !inQuietHours()) {
+   if (shouldNotifyUp) {
       PendingNotification n = {};
       n.pending = true;
       n.link = link;
@@ -92,6 +94,7 @@ void onLinkUp(LinkState *state, LinkId link, int16_t rssi) {
 
    state->eventoAtual = 0;
    state->inicioFalha = 0;
+   state->downNotificationSent = false;
 }
 
 void onBoot() {
@@ -130,18 +133,22 @@ void onBoot() {
    ev.tipo = EVENT_BOOT;
    appendEvent(ev);
 
-   PendingNotification n = {};
-   n.pending = true;
-   n.link = LINK_SYSTEM;
-   n.bootReason = bootReason;
-   n.tipo = NOTIFY_BOOT;
-   n.evento = ev.id;
-   n.inicio = inicio;
-   n.fim = fim;
-   n.duracao = duracao;
-   n.rssi = 0;
+   if (clockIsValid()) {
+      PendingNotification n = {};
+      n.pending = true;
+      n.link = LINK_SYSTEM;
+      n.bootReason = bootReason;
+      n.tipo = NOTIFY_BOOT;
+      n.evento = ev.id;
+      n.inicio = inicio;
+      n.fim = fim;
+      n.duracao = duracao;
+      n.rssi = 0;
 
-   queueNotification(n);
+      queueNotification(n);
+   } else {
+      DBG("Notificação de boot adiada: relógio inválido.\n");
+   }
 
    gRuntime.bootReason = BOOT_POWERON;
    gRuntime.rebootStartTime = now();

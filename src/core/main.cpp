@@ -82,6 +82,7 @@ void setup() {
 
    initLedTask();     // começa imediatamente a sequência visual
    initRuntimeMutex();
+   initConfigMutex();
    initEventsMutex();
    WiFi.onEvent(onWiFiEvent);
    initTelegramTask();
@@ -97,10 +98,13 @@ void setup() {
          delay(1000);
    }
 
-   for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
+   bool clockSynced = false;
+   for (uint8_t i = 0; i < gPerfil->numLinks && !clockSynced; i++) {
       if (connectWifi(gPerfil->links[i].ssid, gPerfil->links[i].senha)) {
-         syncClock();
-         break;
+         clockSynced = syncClock();
+         if (!clockSynced)
+            disconnectWifi();
+         continue;
       }
 
       DBG("Falha na conexão Wi-Fi inicial para sincronizar relógio. "
@@ -108,6 +112,20 @@ void setup() {
 
       delay(5000);
    }
+
+   for (uint8_t tentativa = 0; !clockSynced && tentativa < 3; tentativa++) {
+      DBG("Relógio ainda inválido. Nova tentativa de sincronização (%u/3)...\n", tentativa + 1);
+      if (WiFi.status() != WL_CONNECTED) {
+         if (!connectWifi(gPerfil->links[0].ssid, gPerfil->links[0].senha))
+            continue;
+      }
+      clockSynced = syncClock();
+      if (!clockSynced)
+         delay(1000);
+   }
+
+   if (!clockSynced)
+      DBG("AVISO: não foi possível sincronizar o relógio durante o boot.\n");
 
    initSystem();
    ledSystemReady();
@@ -146,36 +164,53 @@ void loop() {
       ledUpdate();
       DBG("\n=== %s ===\n", gPerfil->links[i].nome);
 
-      uint8_t retries = (gRuntime.links[i].status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
+      LinkState currentState;
+      lockRuntime();
+      currentState = gRuntime.links[i];
+      unlockRuntime();
+
+      uint8_t retries = (currentState.status == LINK_ONLINE) ? LINK_TEST_RETRIES : 1;
       
       status[i] = testConnection(gPerfil->links[i].ssid, gPerfil->links[i].senha, &rssi, retries);
 
-      wifiFailCycles = gRuntime.links[i].wifiFailCycles;
+      wifiFailCycles = currentState.wifiFailCycles;
 
       // DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
       if (status[i] == LINK_WIFI_FAIL) {
          wifiFailCycles++;
 
-         DBG("LINK_WIFI_FAIL no ciclo %d. Máximo de ciclos ignorados = %d\n", wifiFailCycles, WIFI_FAIL_CYCLES);
-
-         if (wifiFailCycles < WIFI_FAIL_CYCLES) {
-            DBG("Falha Wi-Fi %u/%u - ignorada neste ciclo\n", wifiFailCycles, WIFI_FAIL_CYCLES);
-            gRuntime.links[i].wifiFailCycles = wifiFailCycles;
-            continue;   // não chama processLink()
-
+         LinkState state = currentState;
+         if (state.inicioFalha == 0) {
+            state.inicioFalha = now();
          }
+
+         uint32_t failElapsedSec = (uint32_t)(now() - state.inicioFalha);
+
+         DBG("LINK_WIFI_FAIL no ciclo %d. Falha persistente em %lu/%lu s. Máximo de ciclos ignorados = %d\n",
+             wifiFailCycles, (unsigned long)failElapsedSec, (unsigned long)WIFI_FAIL_GRACE_SEC, WIFI_FAIL_CYCLES);
+
+         if (failElapsedSec < WIFI_FAIL_GRACE_SEC || wifiFailCycles < WIFI_FAIL_CYCLES) {
+            DBG("Falha Wi-Fi transitória %u/%u - ignorada neste ciclo (grace %lu s)\n",
+                wifiFailCycles, WIFI_FAIL_CYCLES, (unsigned long)WIFI_FAIL_GRACE_SEC);
+            lockRuntime();
+            gRuntime.links[i].wifiFailCycles = wifiFailCycles;
+            unlockRuntime();
+            continue;   // não chama processLink()
+         }
+
+         currentState = state;
       }
       else {
          wifiFailCycles = 0;
       }
 
-      LinkState state;
-
-      state = gRuntime.links[i];
+      LinkState state = currentState;
 
       processLinkState(&state, i, status[i], rssi);
 
+      lockRuntime();
       gRuntime.links[i] = state;
+      unlockRuntime();
 
       // Verifica se existe um link que caiu durante
       // o horário de silêncio e gera a notificação

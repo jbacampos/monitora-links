@@ -39,11 +39,9 @@ bool connectWifi(const char *ssid, const char *password) {
 
    WiFi.mode(WIFI_STA);
    WiFi.setAutoReconnect(false);
-
    WiFi.setSleep(false);
-
-   // WiFi.disconnect();
-   // delay(100);
+   WiFi.disconnect(true);
+   delay(100);
    wifiDisconnectReason = 0;
 
    WiFi.begin(ssid, password);
@@ -62,8 +60,9 @@ bool connectWifi(const char *ssid, const char *password) {
       ledUpdate();
       delay(RETRY_DELAY_MS);
 
-      if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) {
+      if (millis() - start >= WIFI_CONNECT_TIMEOUT_MS) {
          DBG("Timeout na tentativa de conexão\n");
+         WiFi.disconnect(true);
          return false;
       }
    }

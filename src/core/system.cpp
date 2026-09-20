@@ -19,9 +19,18 @@ void initSystem() {
    WiFi.setAutoReconnect(false);
 
    if (!initFS()) {
-      DBG("ERRO LITTLEFS\n");
-      while (true)
-         delay(1000);
+      DBG("ERRO LITTLEFS. Tentando formatar o sistema de arquivos...\n");
+      if (!LittleFS.format()) {
+         DBG("ERRO: falha ao formatar LittleFS. Reiniciando...\n");
+         while (true)
+            delay(1000);
+      }
+
+      if (!initFS()) {
+         DBG("ERRO LITTLEFS incluso após formatar.\n");
+         while (true)
+            delay(1000);
+      }
    }
 
    if (!loadStorage(FILE_CONFIG, gConfig, CONFIG_MAGIC, CONFIG_VERSION)) {

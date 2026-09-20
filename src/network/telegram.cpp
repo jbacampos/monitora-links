@@ -1,6 +1,7 @@
 #include "network/telegram.h"
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
 
 #include "config/config.h"
@@ -108,15 +109,19 @@ CommandResult cmdNotify(const String &args) {
       result.message = buildInfoNotif();
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
+      lockConfig();
       gConfig.notification.enabled = true;
       gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
+      unlockConfig();
       result.message = "\n🔔 Notificações ATIVADAS";
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
+      lockConfig();
       gConfig.notification.enabled = false;
       gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
+      unlockConfig();
       result.message = "\n🔕 Notificações DESATIVADAS";
 
    } else {
@@ -144,21 +149,26 @@ CommandResult cmdQuiet(const String &args) {
       result.message += formatTime(gConfig.notification.quietEnd);
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
+      lockConfig();
       gConfig.notification.quietEnabled = true;
       gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
       result.message = "\n🔔 Período quieto ATIVADO\n" + formatTime(gConfig.notification.quietStart) + " - " + formatTime(gConfig.notification.quietEnd);
+      unlockConfig();
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
+      lockConfig();
       gConfig.notification.quietEnabled = false;
       gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
+      unlockConfig();
       result.message = "\n🔕 Período quieto DESATIVADO";
 
    } else if (totArgs == 2 && parseTime(arg1, &min1) && parseTime(arg2, &min2)) {
       if (min1 == min2) {
          result.message = "\n⚠️ Horários inicial e final devem ser diferentes";
       } else {
+         lockConfig();
          gConfig.notification.quietStart = min1;
          gConfig.notification.quietEnd = min2;
          gConfig.notification.quietEnabled = true;
@@ -166,6 +176,7 @@ CommandResult cmdQuiet(const String &args) {
          saveStorage(FILE_CONFIG, gConfig);
          result.message =
              "🔔 Período quieto:\nREDEFINIDO e ATIVADO\n" + formatTime(gConfig.notification.quietStart) + " - " + formatTime(gConfig.notification.quietEnd);
+         unlockConfig();
       }
 
    } else {
@@ -189,21 +200,27 @@ CommandResult cmdLed(const String &args) {
       result.message = buildInfoLed();
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("off")) {
+      lockConfig();
       gConfig.notification.ledMode = LED_MODE_OFF;
       gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
+      unlockConfig();
       result.message = "\nAtividade do led:\n⚪ DESATIVADA";
 
    } else if (totArgs == 1 && arg1.equalsIgnoreCase("on")) {
+      lockConfig();
       gConfig.notification.ledMode = LED_MODE_ON;
       gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
+      unlockConfig();
       result.message = "\nAtividade do led:\n🔵 ATIVADA";
 
    } else if (totArgs == 1 && (arg1.equalsIgnoreCase("q") || arg1.equalsIgnoreCase("quiet"))) {
+      lockConfig();
       gConfig.notification.ledMode = LED_MODE_QUIET;
       gConfig.saveCount++;
       saveStorage(FILE_CONFIG, gConfig);
+      unlockConfig();
       result.message = "\nAtividade do led:\n⚪🔵 DESATIVADA no PQ";
 
    } else {
@@ -287,7 +304,9 @@ bool telegramSendMessage(const String &text) {
 
    WiFiClientSecure client;
    client.setInsecure();
+   client.setTimeout(5000);
    HTTPClient http;
+   http.setTimeout(5000);
 
    if (!http.begin(client, url)) {
       DBG("Telegram: erro em http.begin()\n");
@@ -328,7 +347,9 @@ bool telegramGetUpdates(TelegramUpdate *upd) {
 
    WiFiClientSecure client;
    client.setInsecure();
+   client.setTimeout(5000);
    HTTPClient http;
+   http.setTimeout(5000);
 
    if (!http.begin(client, url)) {
       DBG("Telegram: erro em http.begin()\n");
@@ -361,47 +382,49 @@ bool telegramGetUpdates(TelegramUpdate *upd) {
 //=============================================================================
 
 static bool telegramParseUpdate(const String &json, TelegramUpdate *upd) {
-   int p, q;
-   // update_id
-   p = json.indexOf("\"update_id\":");
-   if (p < 0)
+   JsonDocument doc;
+   DeserializationError err = deserializeJson(doc, json);
+
+   if (err) {
+      DBG("Telegram: JSON inválido em getUpdates: %s\n", err.c_str());
       return false;
-
-   p += 12;
-   upd->updateId = strtoul(json.c_str() + p, nullptr, 10);
-
-   // chat.id
-   p = json.indexOf("\"chat\":");
-   if (p < 0)
-      return false;
-
-   p = json.indexOf("\"id\":", p);
-   if (p < 0)
-      return false;
-
-   p += 5;
-   q = p;
-   if (json[q] == '-')
-      q++;
-
-   while (q < json.length() && isDigit(json[q]))
-      q++;
-
-   upd->chatId = json.substring(p, q);
-
-   // text
-   p = json.indexOf("\"text\":\"");
-   if (p < 0) {
-      upd->text = "";
-      return true; // Update válido, mas sem mensagem de texto.
    }
 
-   p += 8;
-   q = json.indexOf('"', p);
-   if (q < 0)
-      return false;
+   JsonVariant results = doc["result"];
+   if (results.isNull() || !results.is<JsonArray>() || results.as<JsonArray>().size() == 0) {
+      upd->updateId = 0;
+      upd->chatId = "";
+      upd->text = "";
+      return true; // Sem atualizações pendentes.
+   }
 
-   upd->text = json.substring(p, q);
+   JsonArray arr = results.as<JsonArray>();
+   JsonObject first = arr[0];
+   if (first["update_id"].isNull()) {
+      return false;
+   }
+
+   upd->updateId = first["update_id"].as<uint32_t>();
+
+   JsonObject message = first["message"];
+   if (!message.isNull()) {
+      JsonVariant chatId = message["chat"]["id"];
+      if (!chatId.isNull()) {
+         upd->chatId = chatId.as<String>();
+      } else {
+         upd->chatId = "";
+      }
+
+      JsonVariant text = message["text"];
+      if (!text.isNull()) {
+         upd->text = text.as<String>();
+      } else {
+         upd->text = "";
+      }
+   } else {
+      upd->chatId = "";
+      upd->text = "";
+   }
 
    return true;
 }
