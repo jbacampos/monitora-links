@@ -48,7 +48,11 @@ const uint8_t numPerfis = sizeof(perfis) / sizeof(perfis[0]);
 const Perfil *gPerfil = nullptr;
 
 const Perfil *detectProfile() {
-   int total = WiFi.scanNetworks();
+   WiFi.mode(WIFI_STA);
+   WiFi.scanDelete();
+   DBG("Detectando perfil: iniciando varredura Wi-Fi...\n");
+   int total = WiFi.scanNetworks(false, false, false, 300);
+   DBG("Detectando perfil: varredura concluída (%d redes).\n", total);
     
    // DBG("Detectando perfil. Total de redes encontradas: %d\n", total);
    // for (int i = 0; i < total; i++) {

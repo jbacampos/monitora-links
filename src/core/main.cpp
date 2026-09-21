@@ -16,6 +16,8 @@
 #include "reports/reports.h"
 #include "reports/stats.h"
 
+static void processMonitorCommand(const MonitorCommand &command);
+
 static String commandArgs(const MonitorCommand &command)
 {
    String text = command.text;
@@ -25,6 +27,13 @@ static String commandArgs(const MonitorCommand &command)
    String args = text.substring(p + 1);
    args.trim();
    return args;
+}
+
+static void processPendingMonitorCommands() {
+   MonitorCommand command = {};
+
+   while (getMonitorCommand(command))
+      processMonitorCommand(command);
 }
 
 static void processMonitorCommand(const MonitorCommand &command) {
@@ -85,7 +94,6 @@ void setup() {
    initConfigMutex();
    initEventsMutex();
    WiFi.onEvent(onWiFiEvent);
-   initTelegramTask();
 
    DBG("setup() executando no core %d\n", xPortGetCoreID());
 
@@ -131,6 +139,7 @@ void setup() {
    ledSystemReady();
 
    onBoot();
+   initTelegramTask();
 
    DBG("\nPerfil selecionado: %s\n", gPerfil->nome);
    DBG("Número de links: %u\n", gPerfil->numLinks);
@@ -149,6 +158,10 @@ void setup() {
 }
 
 void loop() {
+
+   // Processa comandos recebidos antes de iniciar uma nova rodada de testes.
+   // Assim, uma resposta não fica atrás de todo o ciclo de monitoramento.
+   processPendingMonitorCommands();
 
    // A conexão mantida entre ciclos pertenceu à janela de serviços.
    // Encerra-a antes de iniciar os testes.
@@ -241,10 +254,7 @@ void loop() {
    if (serviceConnection)
       openServiceWindow();
 
-   MonitorCommand command = {};
-
-   while (getMonitorCommand(command))
-      processMonitorCommand(command);
+   processPendingMonitorCommands();
 
    
    LedStatus ledStatus;
