@@ -170,9 +170,6 @@ void loop() {
    ledBeginCycle();
    int16_t rssi;
    LinkStatus status[gPerfil->numLinks];
-   uint8_t wifiFailCycles;
-
-
    for (uint8_t i = 0; i < gPerfil->numLinks; i++) {
       ledUpdate();
       DBG("\n=== %s ===\n", gPerfil->links[i].nome);
@@ -186,13 +183,12 @@ void loop() {
       
       status[i] = testConnection(gPerfil->links[i].ssid, gPerfil->links[i].senha, &rssi, retries);
 
-      wifiFailCycles = currentState.wifiFailCycles;
+      LinkState state = currentState;
 
       // DBG("Status do link %s: %s. LINK_WIFI_FAIL = %d\n", gPerfil->links[i].nome, linkStatusDescription(status[i]), LINK_WIFI_FAIL);
       if (status[i] == LINK_WIFI_FAIL) {
-         wifiFailCycles++;
-
-         LinkState state = currentState;
+         if (state.wifiFailCycles < UINT8_MAX)
+            state.wifiFailCycles++;
          if (state.inicioFalha == 0) {
             state.inicioFalha = now();
          }
@@ -200,24 +196,26 @@ void loop() {
          uint32_t failElapsedSec = (uint32_t)(now() - state.inicioFalha);
 
          DBG("LINK_WIFI_FAIL no ciclo %d. Falha persistente em %lu/%lu s. Máximo de ciclos ignorados = %d\n",
-             wifiFailCycles, (unsigned long)failElapsedSec, (unsigned long)WIFI_FAIL_GRACE_SEC, WIFI_FAIL_CYCLES);
+             state.wifiFailCycles, (unsigned long)failElapsedSec, (unsigned long)WIFI_FAIL_GRACE_SEC, WIFI_FAIL_CYCLES);
 
-         if (failElapsedSec < WIFI_FAIL_GRACE_SEC || wifiFailCycles < WIFI_FAIL_CYCLES) {
+         if (failElapsedSec < WIFI_FAIL_GRACE_SEC || state.wifiFailCycles < WIFI_FAIL_CYCLES) {
             DBG("Falha Wi-Fi transitória %u/%u - ignorada neste ciclo (grace %lu s)\n",
-                wifiFailCycles, WIFI_FAIL_CYCLES, (unsigned long)WIFI_FAIL_GRACE_SEC);
+                state.wifiFailCycles, WIFI_FAIL_CYCLES, (unsigned long)WIFI_FAIL_GRACE_SEC);
             lockRuntime();
-            gRuntime.links[i].wifiFailCycles = wifiFailCycles;
+            gRuntime.links[i] = state;
             unlockRuntime();
             continue;   // não chama processLink()
          }
 
-         currentState = state;
       }
       else {
-         wifiFailCycles = 0;
-      }
+          state.wifiFailCycles = 0;
 
-      LinkState state = currentState;
+         // Falha Wi-Fi ignorada no periodo de graca nao representa queda
+         // confirmada; descarte o marco temporario.
+         if (state.status == LINK_ONLINE)
+            state.inicioFalha = 0;
+      }
 
       processLinkState(&state, i, status[i], rssi);
 
