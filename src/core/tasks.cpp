@@ -26,7 +26,7 @@ static QueueHandle_t monitorActionQueue = nullptr;
 // contador não precisa de sincronização.
 static uint8_t telegramMessageAttempts = 0;
 
-static bool discardTelegramMessage();
+static bool discardTelegramMessage(TelegramMessage &reuse);
 
 static void telegramTask(void *parameter);
 static void telegramServiceRound(uint32_t &proximoGetUpdates);
@@ -198,13 +198,13 @@ static void telegramServiceRound(uint32_t &proximoGetUpdates) {
                    (unsigned)telegramMessageAttempts, (unsigned)TELEGRAM_MESSAGE_MAX_ATTEMPTS);
             } else {
                DBG("Mensagem descartada apos %u tentativas\n", (unsigned)telegramMessageAttempts);
-               discardTelegramMessage();
+               discardTelegramMessage(message);
             }
 
             break;      // nao alonga a janela de servico
          }
 
-         discardTelegramMessage();   // enviada: agora sai da fila
+         discardTelegramMessage(message);   // enviada: agora sai da fila
 
          if (message.action == TELEGRAM_ACTION_REBOOT) {
             DBG("Mensagem enviada. Solicitando reboot ao Monitor.\n");
@@ -510,13 +510,11 @@ bool getTelegramMessage(TelegramMessage &message) {
 
 // Remove a mensagem do topo da fila: usar após envio bem-sucedido ou após
 // esgotar as tentativas de envio.
-static bool discardTelegramMessage() {
+static bool discardTelegramMessage(TelegramMessage &reuse) {
    if (telegramMessageQueue == nullptr)
       return false;
 
-   TelegramMessage lixo;
-
-   bool removida = xQueueReceive(telegramMessageQueue, &lixo, 0) == pdPASS;
+   bool removida = xQueueReceive(telegramMessageQueue, &reuse, 0) == pdPASS;
 
    if (removida)
       telegramMessageAttempts = 0;
