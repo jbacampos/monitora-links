@@ -101,6 +101,10 @@ constexpr char FILE_EVENTS[]  = "/events.bin";
 
 #define TELEGRAM_HOST "api.telegram.org"
 #define TELEGRAM_PORT 443
+
+// Tentativas de envio de uma mensagem da fila do Telegram. Uma tentativa
+// por rodada da TelegramTask (para não alongar a janela de serviço).
+constexpr uint8_t TELEGRAM_MESSAGE_MAX_ATTEMPTS = 3;
 #define MAX_PENDING_NOTIFICATIONS 4
 constexpr uint32_t TELEGRAM_GET_UPDATES_INTERVAL = 5000; 
 
@@ -113,6 +117,16 @@ constexpr uint8_t WIFI_FAIL_CYCLES = 6;
 constexpr uint16_t RETRY_DELAY_MS = 300;
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 2000;
 constexpr uint32_t WIFI_FAIL_GRACE_SEC = 45;
+
+// Espera máxima do Monitor pela devolução da conexão pela TelegramTask.
+// O Monitor acorda assim que a task libera (semáforo); este valor é apenas a
+// rede de segurança. Deve ser >= pior caso de UMA rodada da TelegramTask
+// (hoje até 9 operações de rede: 4 mensagens da fila + 4 notificações
+// pendentes + 1 getUpdates, cada uma limitada pelos timeouts de TCP/HTTP).
+constexpr uint32_t SERVICE_WINDOW_CLOSE_TIMEOUT_MS = 90000;
+
+// Pausa do Monitor quando o ciclo é adiado por causa da janela de serviço.
+constexpr uint32_t SERVICE_WINDOW_RETRY_DELAY_MS = 1000;
 
 
 /*********************************************************************

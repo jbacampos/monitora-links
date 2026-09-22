@@ -1,0 +1,473 @@
+diff --git a/include/config/config.h b/include/config/config.h
+index 7b6cbd9..f73a8f6 100644
+--- a/include/config/config.h
++++ b/include/config/config.h
+@@ -101,6 +101,10 @@ constexpr char FILE_EVENTS[]  = "/events.bin";
+ 
+ #define TELEGRAM_HOST "api.telegram.org"
+ #define TELEGRAM_PORT 443
++
++// Tentativas de envio de uma mensagem da fila do Telegram. Uma tentativa
++// por rodada da TelegramTask (para não alongar a janela de serviço).
++constexpr uint8_t TELEGRAM_MESSAGE_MAX_ATTEMPTS = 3;
+ #define MAX_PENDING_NOTIFICATIONS 4
+ constexpr uint32_t TELEGRAM_GET_UPDATES_INTERVAL = 5000; 
+ 
+@@ -114,6 +118,16 @@ constexpr uint16_t RETRY_DELAY_MS = 300;
+ constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 2000;
+ constexpr uint32_t WIFI_FAIL_GRACE_SEC = 45;
+ 
++// Espera máxima do Monitor pela devolução da conexão pela TelegramTask.
++// O Monitor acorda assim que a task libera (semáforo); este valor é apenas a
++// rede de segurança. Deve ser >= pior caso de UMA rodada da TelegramTask
++// (hoje até 9 operações de rede: 4 mensagens da fila + 4 notificações
++// pendentes + 1 getUpdates, cada uma limitada pelos timeouts de TCP/HTTP).
++constexpr uint32_t SERVICE_WINDOW_CLOSE_TIMEOUT_MS = 90000;
++
++// Pausa do Monitor quando o ciclo é adiado por causa da janela de serviço.
++constexpr uint32_t SERVICE_WINDOW_RETRY_DELAY_MS = 1000;
++
+ 
+ /*********************************************************************
+  * DEBUG
+diff --git a/include/core/tasks.h b/include/core/tasks.h
+index 8e54b48..47c07b2 100644
+--- a/include/core/tasks.h
++++ b/include/core/tasks.h
+@@ -45,5 +45,6 @@ void initConfigMutex();
+ void lockConfig();
+ void unlockConfig();
+ 
++void initServiceWindow();
+ void openServiceWindow();
+-void closeServiceWindow();
+\ No newline at end of file
++bool closeServiceWindow();   // true = rádio comprovadamente livre para o Monitor
+\ No newline at end of file
+diff --git a/src/core/main.cpp b/src/core/main.cpp
+index cbad06c..5024086 100644
+--- a/src/core/main.cpp
++++ b/src/core/main.cpp
+@@ -89,6 +89,7 @@ void setup() {
+    ledInit();
+    ledStartup();
+ 
++   initServiceWindow();   // antes de initLedTask(): heap menos fragmentado
+    initLedTask();     // começa imediatamente a sequência visual
+    initRuntimeMutex();
+    initConfigMutex();
+@@ -164,8 +165,14 @@ void loop() {
+    processPendingMonitorCommands();
+ 
+    // A conexão mantida entre ciclos pertenceu à janela de serviços.
+-   // Encerra-a antes de iniciar os testes.
+-   closeServiceWindow();
++   // Encerra-a antes de iniciar os testes -- mas só quando a TelegramTask
++   // tiver devolvido o rádio de fato.
++   if (!closeServiceWindow()) {
++      DBG("\nCiclo adiado: TelegramTask ainda usa a conexão.\n");
++      delay(SERVICE_WINDOW_RETRY_DELAY_MS);
++      return;                 // não toca no rádio neste ciclo
++   }
++
+    disconnectWifi();
+    ledBeginCycle();
+    int16_t rssi;
+@@ -277,9 +284,16 @@ void loop() {
+    MonitorAction action;
+    if (getMonitorAction(action)) {
+       
+-      closeServiceWindow();
+-
+-      switch (action) {
++      // doOta() abre TLS próprio e envia mensagens; doReboot() reinicia com
++      // possível gravação de LittleFS em andamento na TelegramTask. Só
++      // prosseguimos com a conexão comprovadamente livre.
++      if (!closeServiceWindow()) {
++         DBG("Acao %d adiada: TelegramTask ainda usa a conexão.\n", action);
++         if (!queueMonitorAction(action))
++            DBG("ERRO ao devolver a acao para a fila\n");
++      } else {
++
++         switch (action) {
+          case ACTION_REBOOT:
+             DBG("Executando ACTION_REBOOT no Monitor.\n");
+             doReboot();
+@@ -292,6 +306,7 @@ void loop() {
+          default:
+             DBG("Monitor action desconhecido: %d\n", action);
+             break;
++         }
+       }
+    }
+ 
+diff --git a/src/core/tasks.cpp b/src/core/tasks.cpp
+index 30ea29f..0c01fd4 100644
+--- a/src/core/tasks.cpp
++++ b/src/core/tasks.cpp
+@@ -7,6 +7,9 @@
+ #include <network/telegram.h>
+ #include <network/wifi_manager.h>
+ 
++#include <freertos/semphr.h>
++#include <freertos/task.h>
++
+ // tasks.cpp
+ 
+ static TaskHandle_t ledTaskHandle = nullptr;
+@@ -18,9 +21,37 @@ static QueueHandle_t telegramMessageQueue = nullptr;
+ static QueueHandle_t monitorCommandQueue = nullptr;
+ static QueueHandle_t monitorActionQueue = nullptr;
+ 
+-static volatile bool serviceWindowOpen = false;
+-static volatile bool telegramBusy = false;
++// Contador de tentativas de envio do item que está no topo da fila de
++// mensagens. Só a TelegramTask consome telegramMessageQueue, então este
++// contador não precisa de sincronização.
++static uint8_t telegramMessageAttempts = 0;
++
++static bool discardTelegramMessage();
++
+ static void telegramTask(void *parameter);
++static void telegramServiceRound(uint32_t &proximoGetUpdates);
++
++//=============================================================================
++// Janela de serviço
++//
++// O Monitor é dono do rádio e empresta a conexão Wi-Fi para a TelegramTask
++// durante a "janela de serviço". Invariante: se closeServiceWindow() retorna
++// true, a TelegramTask não está (e não entrará) em nenhuma operação de
++// rede/flash até uma nova chamada de openServiceWindow().
++//
++// Pré-condição de uso: serviceWindowReady == true. Os dois objetos são
++// criados de forma "tudo ou nada": se um falhar, o outro é destruído e o
++// protocolo fica desabilitado (o Monitor continua funcionando sem Telegram).
++//=============================================================================
++
++static SemaphoreHandle_t serviceMutex = nullptr;     // protege o estado abaixo
++static SemaphoreHandle_t telegramIdleSem = nullptr;  // sinalizado a cada liberação
++static bool serviceWindowReady = false;              // os DOIS objetos existem?
++static bool serviceWindowOpen = false;               // Monitor autoriza o uso?
++static bool telegramBusy = false;                    // TelegramTask está usando?
++
++static bool acquireServiceWindow();
++static void releaseServiceWindow();
+ 
+ static void acknowledgeTelegramUpdate(uint32_t updateId) {
+    lockRuntime();
+@@ -123,26 +154,35 @@ static void telegramTask(void *parameter) {
+ 
+    DBG("Task do Telegram iniciada no core %d\n", xPortGetCoreID());
+ 
+-   TelegramUpdate upd;
+    uint32_t proximoGetUpdates = 0;
+ 
+    for (;;) {
+ 
+-      // DBG("TelegramTask: serviceWindowOpen=%d WiFi=%d\n", serviceWindowOpen, WiFi.status());
+-      if (!serviceWindowOpen || WiFi.status() != WL_CONNECTED) {
++      if (millis() < proximoGetUpdates) {
+          vTaskDelay(pdMS_TO_TICKS(50));
+          continue;
+       }
+ 
+-      if (millis() < proximoGetUpdates) {
++      // Daqui até releaseServiceWindow() esta task é a única usuária do
++      // rádio, e o Monitor enxerga isso (telegramBusy) de forma atômica.
++      if (!acquireServiceWindow()) {
+          vTaskDelay(pdMS_TO_TICKS(50));
+          continue;
+       }
+ 
+-      // A partir daqui, a task está usando a conexão.
+-      telegramBusy = true;
++      telegramServiceRound(proximoGetUpdates);   // pode dar return em qualquer ponto
++
++      releaseServiceWindow();                    // ÚNICO ponto de liberação
++   }
++}
++
++// Uma rodada de serviço. Sai por return em qualquer ponto; a liberação da
++// conexão é responsabilidade do chamador (telegramTask).
++static void telegramServiceRound(uint32_t &proximoGetUpdates) {
+ 
+-      bool actionRequested = false;
++   TelegramUpdate upd;
++
++   bool actionRequested = false;
+       
+       // Envia mensagens produzidas pelo Monitor
+       TelegramMessage message = {};
+@@ -152,10 +192,20 @@ static void telegramTask(void *parameter) {
+          DBG("Mensagem retirada da fila do Telegram: %s\n", message.text);
+ 
+          if (!telegramSendMessage(String(message.text))) {
+-            DBG("Falha ao enviar mensagem da fila do Telegram\n");
+-            break;
++
++            if (++telegramMessageAttempts < TELEGRAM_MESSAGE_MAX_ATTEMPTS) {
++               DBG("Falha ao enviar. Nova tentativa na proxima rodada (%u/%u)\n",
++                   (unsigned)telegramMessageAttempts, (unsigned)TELEGRAM_MESSAGE_MAX_ATTEMPTS);
++            } else {
++               DBG("Mensagem descartada apos %u tentativas\n", (unsigned)telegramMessageAttempts);
++               discardTelegramMessage();
++            }
++
++            break;      // nao alonga a janela de servico
+          }
+ 
++         discardTelegramMessage();   // enviada: agora sai da fila
++
+          if (message.action == TELEGRAM_ACTION_REBOOT) {
+             DBG("Mensagem enviada. Solicitando reboot ao Monitor.\n");
+             if (queueMonitorAction(ACTION_REBOOT))
+@@ -175,9 +225,8 @@ static void telegramTask(void *parameter) {
+       }
+ 
+       if (actionRequested) {
+-         telegramBusy = false;
+          proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
+-         continue;
++         return;
+       }      
+       
+       // Envia primeiro as notificações pendentes
+@@ -188,18 +237,14 @@ static void telegramTask(void *parameter) {
+ 
+       proximoGetUpdates = millis() + TELEGRAM_GET_UPDATES_INTERVAL;
+ 
+-      if (!telegramGetUpdates(&upd)) {
+-         telegramBusy = false;
+-         vTaskDelay(pdMS_TO_TICKS(50));
+-         continue;
+-      }
++      if (!telegramGetUpdates(&upd))
++         return;
+ 
+       if (upd.updateId == 0 || upd.chatId.isEmpty() || upd.text.isEmpty()) {
+          DBG("Telegram: update vazio ou inválido - ignorando.\n");
+          if (upd.updateId != 0)
+             acknowledgeTelegramUpdate(upd.updateId);
+-         telegramBusy = false;
+-         continue;
++         return;
+       }
+ 
+       DBG("Update recebido = %u - %s\n", upd.updateId, upd.text.c_str());
+@@ -208,8 +253,7 @@ static void telegramTask(void *parameter) {
+          telegramSendMessage("⛔ Chat não autorizado.\nUse o MonitLinks");
+          acknowledgeTelegramUpdate(upd.updateId);
+ 
+-         telegramBusy = false;
+-         continue;
++         return;
+       }
+ 
+       DBG("upd.text = %s\n", upd.text.c_str());
+@@ -219,32 +263,142 @@ static void telegramTask(void *parameter) {
+       } else {
+          acknowledgeTelegramUpdate(upd.updateId);
+       }
++}
++
++//=============================================================================
++// Janela de serviço
++//=============================================================================
++
++void initServiceWindow() {
++
++   if (serviceWindowReady)
++      return;
++
++   // Tudo ou nada: o protocolo depende dos DOIS objetos. Se apenas um fosse
++   // criado, acquireServiceWindow() poderia tomar o "lease" sem que
++   // releaseServiceWindow() conseguisse sinalizar telegramIdleSem -- e o
++   // closeServiceWindow() acabaria usando um handle inválido (assert/panic).
++   serviceMutex = xSemaphoreCreateMutex();
++   telegramIdleSem = xSemaphoreCreateBinary();
++
++   if (serviceMutex == nullptr || telegramIdleSem == nullptr) {
++
++      if (serviceMutex != nullptr) {
++         vSemaphoreDelete(serviceMutex);
++         serviceMutex = nullptr;
++      }
++
++      if (telegramIdleSem != nullptr) {
++         vSemaphoreDelete(telegramIdleSem);
++         telegramIdleSem = nullptr;
++      }
++
++      serviceWindowReady = false;
++      DBG("ERRO ao criar a janela de serviço. Telegram desabilitado.\n");
++      return;
++   }
++
++   serviceWindowReady = true;
++   DBG("Janela de serviço inicializada\n");
++}
++
++// Só a TelegramTask chama. Devolve true já com o "lease" tomado.
++static bool acquireServiceWindow() {
++
++   if (!serviceWindowReady)
++      return false;                 // modo degradado: sem empréstimo
+ 
+-      // Libera a conexão para o próximo ciclo
+-      telegramBusy = false;
++   bool pode = false;
++
++   xSemaphoreTake(serviceMutex, portMAX_DELAY);
++
++   // Leitura do estado + marcação de "ocupado" na MESMA região crítica:
++   // é isso que elimina a janela entre ler serviceWindowOpen e marcar
++   // telegramBusy.
++   if (serviceWindowOpen && WiFi.status() == WL_CONNECTED) {
++      telegramBusy = true;
++      pode = true;
+    }
++
++   xSemaphoreGive(serviceMutex);
++
++   return pode;
++}
++
++// Só a TelegramTask chama. Único ponto que baixa a flag e acorda o Monitor.
++static void releaseServiceWindow() {
++
++   if (!serviceWindowReady)
++      return;
++
++   xSemaphoreTake(serviceMutex, portMAX_DELAY);
++   telegramBusy = false;                       // 1) estado
++   xSemaphoreGive(serviceMutex);
++
++   xSemaphoreGive(telegramIdleSem);            // 2) evento (nunca bloqueia)
+ }
+ 
+-void openServiceWindow() { serviceWindowOpen = true; }
++void openServiceWindow() {
+ 
+-void closeServiceWindow() {
++   if (!serviceWindowReady)
++      return;
++
++   xSemaphoreTake(serviceMutex, portMAX_DELAY);
++   serviceWindowOpen = true;
++   xSemaphoreGive(serviceMutex);
++}
+ 
+-   // Impede que a TelegramTask inicie uma nova operação.
++// Retorna true somente se o rádio está comprovadamente livre para o Monitor.
++bool closeServiceWindow() {
++
++   if (!serviceWindowReady)
++      return true;                 // ninguém pode estar usando o rádio
++
++   // Fecha a janela e lê o estado de forma atômica (não é mais TOCTOU).
++   xSemaphoreTake(serviceMutex, portMAX_DELAY);
+    serviceWindowOpen = false;
++   bool busy = telegramBusy;
++   xSemaphoreGive(serviceMutex);
++
++   if (!busy) {
++      xSemaphoreTake(telegramIdleSem, 0);      // descarta evento obsoleto
++      return true;
++   }
++
++   // Defesa em profundidade: com o init "tudo ou nada" isto não deveria
++   // ocorrer; se ocorrer, adiamos o ciclo em vez de usar handle inválido.
++   if (telegramIdleSem == nullptr) {
++      DBG("ERRO: telegramIdleSem inexistente em closeServiceWindow()\n");
++      return false;
++   }
++
++   DBG("closeServiceWindow(): aguardando TelegramTask liberar a conexão...\n");
+ 
+-   // Se ela já estava trabalhando, espera um pouco por ela ser liberada.
+-   // Evita bloquear o loop principal indefinidamente em rede instável.
+-   const uint32_t timeoutMs = 15000;
+-   const uint32_t start = millis();
++   const TickType_t inicio = xTaskGetTickCount();
++   const TickType_t limite = pdMS_TO_TICKS(SERVICE_WINDOW_CLOSE_TIMEOUT_MS);
+ 
+-   while (telegramBusy) {
+-      if (millis() - start >= timeoutMs) {
+-         DBG("closeServiceWindow(): timeout aguardando TelegramTask. Forçando continuidade.\n");
+-         telegramBusy = false;
++   while (busy) {
++
++      TickType_t decorrido = xTaskGetTickCount() - inicio;
++
++      if (decorrido >= limite)
+          break;
+-      }
+-      vTaskDelay(pdMS_TO_TICKS(10));
++
++      if (xSemaphoreTake(telegramIdleSem, limite - decorrido) != pdTRUE)
++         break;                                // expirou
++
++      // O evento pode ser de uma liberação anterior: reconfere o estado real.
++      xSemaphoreTake(serviceMutex, portMAX_DELAY);
++      busy = telegramBusy;
++      xSemaphoreGive(serviceMutex);
+    }
++
++   if (busy) {
++      DBG("closeServiceWindow(): TIMEOUT. Ciclo será adiado sem tocar no rádio.\n");
++      return false;                            // invariante preservado
++   }
++
++   return true;
+ }
+ 
+ //=============================================================================
+@@ -331,21 +485,45 @@ bool queueTelegramMessage(const char *text, TelegramAction action) {
+ 
+    DBG("Mensagem do Telegram colocada na fila: %s\n", message.text);
+ 
+-   return xQueueSend(telegramMessageQueue, &message, 0) == pdPASS;
++   bool enfileirada = xQueueSend(telegramMessageQueue, &message, 0) == pdPASS;
++
++   if (!enfileirada)
++      DBG("telegramMessageQueue cheia: mensagem descartada\n");
++
++   return enfileirada;
+ }
+ 
+ bool getTelegramMessage(TelegramMessage &message) {
+    if (telegramMessageQueue == nullptr)
+       return false;
+ 
+-   if (xQueueReceive(telegramMessageQueue, &message, 0) != pdPASS)
++   // Peek: NÃO remove o item. A remoção só ocorre após o envio confirmado
++   // (ou após esgotar as tentativas), para permitir nova tentativa na
++   // próxima rodada.
++   if (xQueuePeek(telegramMessageQueue, &message, 0) != pdPASS)
+       return false;
+ 
+-   DBG("Mensagem do Telegram retirada da fila: %s\n", message.text);
++   DBG("Mensagem vista na fila do Telegram: %s\n", message.text);
+ 
+    return true;
+ }
+ 
++// Remove a mensagem do topo da fila: usar após envio bem-sucedido ou após
++// esgotar as tentativas de envio.
++static bool discardTelegramMessage() {
++   if (telegramMessageQueue == nullptr)
++      return false;
++
++   TelegramMessage lixo;
++
++   bool removida = xQueueReceive(telegramMessageQueue, &lixo, 0) == pdPASS;
++
++   if (removida)
++      telegramMessageAttempts = 0;
++
++   return removida;
++}
++
+ 
+ bool queueMonitorAction(MonitorAction action) {
+ 

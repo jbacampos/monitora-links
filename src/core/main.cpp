@@ -89,6 +89,7 @@ void setup() {
    ledInit();
    ledStartup();
 
+   initServiceWindow();   // antes de initLedTask(): heap menos fragmentado
    initLedTask();     // começa imediatamente a sequência visual
    initRuntimeMutex();
    initConfigMutex();
@@ -164,8 +165,14 @@ void loop() {
    processPendingMonitorCommands();
 
    // A conexão mantida entre ciclos pertenceu à janela de serviços.
-   // Encerra-a antes de iniciar os testes.
-   closeServiceWindow();
+   // Encerra-a antes de iniciar os testes -- mas só quando a TelegramTask
+   // tiver devolvido o rádio de fato.
+   if (!closeServiceWindow()) {
+      DBG("\nCiclo adiado: TelegramTask ainda usa a conexão.\n");
+      delay(SERVICE_WINDOW_RETRY_DELAY_MS);
+      return;                 // não toca no rádio neste ciclo
+   }
+
    disconnectWifi();
    ledBeginCycle();
    int16_t rssi;
@@ -277,9 +284,16 @@ void loop() {
    MonitorAction action;
    if (getMonitorAction(action)) {
       
-      closeServiceWindow();
+      // doOta() abre TLS próprio e envia mensagens; doReboot() reinicia com
+      // possível gravação de LittleFS em andamento na TelegramTask. Só
+      // prosseguimos com a conexão comprovadamente livre.
+      if (!closeServiceWindow()) {
+         DBG("Acao %d adiada: TelegramTask ainda usa a conexão.\n", action);
+         if (!queueMonitorAction(action))
+            DBG("ERRO ao devolver a acao para a fila\n");
+      } else {
 
-      switch (action) {
+         switch (action) {
          case ACTION_REBOOT:
             DBG("Executando ACTION_REBOOT no Monitor.\n");
             doReboot();
@@ -292,6 +306,7 @@ void loop() {
          default:
             DBG("Monitor action desconhecido: %d\n", action);
             break;
+         }
       }
    }
 

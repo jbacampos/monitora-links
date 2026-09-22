@@ -45,5 +45,6 @@ void initConfigMutex();
 void lockConfig();
 void unlockConfig();
 
+void initServiceWindow();
 void openServiceWindow();
-void closeServiceWindow();
+bool closeServiceWindow();   // true = rádio comprovadamente livre para o Monitor
