@@ -45,6 +45,14 @@ void initSystem() {
       createDefaultEvents();
    }
 
+   // wifiFailCycles conta ciclos de falha de Wi-Fi consecutivos para filtrar
+   // falhas transitórias; é um contador de SESSÃO. Como RuntimeData é gravado
+   // inteiro por outros módulos (notificações, ack do Telegram, ...), o valor
+   // lido do arquivo pode ser de uma sequência de falhas anterior. Zerar aqui
+   // garante que a graça de WIFI_FAIL_CYCLES valha por inteiro depois de cada
+   // reinicialização.
+   for (uint8_t i = 0; i < MAX_LINKS; i++)
+      gRuntime.links[i].wifiFailCycles = 0;
 
    BootReason br = getBootReason();
 
