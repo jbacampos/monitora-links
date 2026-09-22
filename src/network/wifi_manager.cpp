@@ -53,10 +53,6 @@ bool connectWifi(const char *ssid, const char *password) {
       // DBG("Tentativa de conexão Wi-Fi %u: status = %d\n", cont, WiFi.status());
       cont++;
 
-      if (wifiDisconnectReason != 0 && wifiDisconnectReason != 8) {
-         DBG("Falha Wi-Fi. reason = %d\n", wifiDisconnectReason);
-         return false;
-      }
       ledUpdate();
       delay(RETRY_DELAY_MS);
 
