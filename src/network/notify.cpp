@@ -246,7 +246,29 @@ void sendPendingNotifications() {
 
       unlockRuntime();
 
-      if ((n.tipo == NOTIFY_BOOT || n.tipo == NOTIFY_UP) && n.fim < 1700000000) {
+      if (n.tipo == NOTIFY_BOOT && n.fim < 1700000000) {
+         if (!clockIsValid()) {
+            // Caso A: NOTIFY_BOOT com timestamp inválido e clock inválido.
+            // Não enviar, não descartar, não alterar nada. Apenas pular.
+            continue;
+         }
+         // Caso B: NOTIFY_BOOT com timestamp inválido, mas clock válido.
+         // Hidratar fim, persistir e deixar o fluxo normal prosseguir.
+         lockRuntime();
+         if (gRuntime.pendingNotifications[i].pending &&
+             gRuntime.pendingNotifications[i].evento == n.evento) {
+            gRuntime.pendingNotifications[i].fim = now();
+            gRuntime.saveCount++;
+            saveStorage(FILE_RUNTIME, gRuntime);
+            n.fim = gRuntime.pendingNotifications[i].fim;
+         } else {
+            unlockRuntime();
+            continue;
+         }
+         unlockRuntime();
+      }
+
+      if (n.tipo == NOTIFY_UP && n.fim < 1700000000) {
          DBG("Descartando notificacao #%u com horario invalido\n", n.evento);
          lockRuntime();
          if (gRuntime.pendingNotifications[i].pending &&

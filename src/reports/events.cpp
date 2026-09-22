@@ -101,7 +101,7 @@ void onBoot() {
 
    uint32_t duracao;
    time_t inicio = 0;
-   time_t fim = now();
+   time_t fim = clockIsValid() ? now() : 0;
 
    BootReason bootReason;
    time_t rebootStartTime;
@@ -110,7 +110,7 @@ void onBoot() {
    rebootStartTime = gRuntime.rebootStartTime;
 
    DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(bootReason));
-   if ((bootReason == BOOT_AFTER_REBOOT_COMMAND || bootReason == BOOT_AFTER_OTA) && rebootStartTime != 0) {
+   if ((bootReason == BOOT_AFTER_REBOOT_COMMAND || bootReason == BOOT_AFTER_OTA) && rebootStartTime != 0 && fim != 0) {
       inicio = rebootStartTime;
       duracao = (uint32_t)(fim - inicio);
       DBG("Inicio    : %s\n", formatDateTime(rebootStartTime).c_str());
@@ -133,22 +133,18 @@ void onBoot() {
    ev.tipo = EVENT_BOOT;
    appendEvent(ev);
 
-   if (clockIsValid()) {
-      PendingNotification n = {};
-      n.pending = true;
-      n.link = LINK_SYSTEM;
-      n.bootReason = bootReason;
-      n.tipo = NOTIFY_BOOT;
-      n.evento = ev.id;
-      n.inicio = inicio;
-      n.fim = fim;
-      n.duracao = duracao;
-      n.rssi = 0;
+   PendingNotification n = {};
+   n.pending = true;
+   n.link = LINK_SYSTEM;
+   n.bootReason = bootReason;
+   n.tipo = NOTIFY_BOOT;
+   n.evento = ev.id;
+   n.inicio = inicio;
+   n.fim = fim;
+   n.duracao = duracao;
+   n.rssi = 0;
 
-      queueNotification(n);
-   } else {
-      DBG("Notificação de boot adiada: relógio inválido.\n");
-   }
+   queueNotification(n);
 
    gRuntime.bootReason = BOOT_POWERON;
    gRuntime.rebootStartTime = now();
