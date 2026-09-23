@@ -73,7 +73,9 @@ bool saveStorage(const char* file, const T& data)
     static_assert(!std::is_pointer<T>::value,
               "saveStorage(): passe o objeto, não um ponteiro.");
 
-    File f = LittleFS.open(file, "w");
+    String temp = String(file) + ".tmp";
+
+    File f = LittleFS.open(temp.c_str(), "w");
 
     if (!f) {
         DBG("Não foi possível gravar %s\n", file);
@@ -89,6 +91,13 @@ bool saveStorage(const char* file, const T& data)
         DBG("Bytes gravados não batem com o tamanho de %s\n", file);
         DBG("Gravados : %u\n", gravados);
         DBG("Esperado : %u\n", sizeof(T));
+        LittleFS.remove(temp.c_str());
+        return false;
+    }
+
+    if (!LittleFS.rename(temp.c_str(), file)) {
+        DBG("Não foi possível substituir %s\n", file);
+        LittleFS.remove(temp.c_str());
         return false;
     }
 
