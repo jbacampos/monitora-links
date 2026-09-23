@@ -73,7 +73,7 @@ static void processMonitorCommand(const MonitorCommand &command) {
       queueTelegramMessage("🔄 Reiniciando o monitor...",TELEGRAM_ACTION_REBOOT);
 
    } else if (strcmp(command.text, "/ota") == 0) {
-      queueTelegramMessage("🔄 Atualizando o firmware...",TELEGRAM_ACTION_OTA);
+      queueTelegramMessage("🔄 Verificando o firmware...",TELEGRAM_ACTION_OTA);
    }
 
 }
@@ -124,11 +124,13 @@ void setup() {
 
    for (uint8_t tentativa = 0; !clockSynced && tentativa < 3; tentativa++) {
       DBG("Relógio ainda inválido. Nova tentativa de sincronização (%u/3)...\n", tentativa + 1);
-      if (WiFi.status() != WL_CONNECTED) {
-         if (!connectWifi(gPerfil->links[0].ssid, gPerfil->links[0].senha))
+      for (uint8_t i = 0; !clockSynced && i < gPerfil->numLinks; i++) {
+         if (!connectWifi(gPerfil->links[i].ssid, gPerfil->links[i].senha))
             continue;
+         clockSynced = syncClock();
+         if (!clockSynced)
+            disconnectWifi();
       }
-      clockSynced = syncClock();
       if (!clockSynced)
          delay(1000);
    }
