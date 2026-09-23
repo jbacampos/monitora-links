@@ -18,7 +18,9 @@
 // #define FW_VERSION "1.2.0"   // Multicore concluído, OTA aprimorado, suporte a notificações pendentes, melhorias no código e na estabilidade do sistema.
 // #define FW_VERSION "1.2.1"   // Revisado e melhorado pelo Codex
 // #define FW_VERSION "1.2.2"   // Corrige travamento no setup
-#define FW_VERSION "1.2.3"   // Corrige diversos bugs por IA
+// #define FW_VERSION "1.2.3"   // Corrige diversos bugs por IA
+#define FW_VERSION "1.2.4"   // Corrige diversos bugs e realiza uma limpeza
+
 
 // Incrementar sempre que mudar algum arquivo de configuração, para forçar a sua recriação:
 #define STATE_VERSION 5 
