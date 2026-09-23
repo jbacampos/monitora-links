@@ -32,17 +32,6 @@ void ledStartup() {
    lastBlink = 0;
 }
 
-void ledBusy() {
-   gMode = LED_BUSY;
-   blinkOn = false;
-   lastBlink = 0;
-}
-
-void ledIdle() {
-   gMode = LED_IDLE;
-   blinkOn = false;
-}
-
 static bool systemReady = false;
 
 void ledSystemReady() {

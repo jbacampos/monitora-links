@@ -164,21 +164,6 @@ bool hasPendingNotifications() {
    return hasPending;
 }
 
-uint8_t getPendingNotificationCount() {
-
-   lockRuntime();
-
-   uint8_t totPends = 0;
-   for (uint8_t i = 0; i < MAX_PENDING_NOTIFICATIONS; i++) {
-      if (gRuntime.pendingNotifications[i].pending)
-         totPends++;
-   }
-
-   unlockRuntime();
-   
-   return totPends;
-}
-
 //=============================================================================
 // Envio
 //=============================================================================

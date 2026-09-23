@@ -10,7 +10,6 @@
 //=============================================================================
 
 bool hasPendingNotifications();
-uint8_t getPendingNotificationCount();
 void sendPendingNotifications();
 void queueNotification(const PendingNotification &n);
 

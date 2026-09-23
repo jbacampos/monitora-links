@@ -13,8 +13,6 @@ typedef struct {
    String text;
 } TelegramUpdate;
 
-extern TelegramUpdate gUpdate;
-
 typedef struct {
    String message;
 } CommandResult;
@@ -30,12 +28,6 @@ CommandResult cmdLed(const String &args);
 void doReboot();
 void doOta();
 
-
-//=============================================================================
-// Inicialização
-//=============================================================================
-
-bool telegramInit();
 
 //=============================================================================
 // Comunicação

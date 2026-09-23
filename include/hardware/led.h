@@ -34,8 +34,6 @@ void ledSystemReady();
 void ledUpdate();
 
 void ledFlash(LedColor color, uint32_t durationMs);
-void ledBusy();
-void ledIdle();
 void ledStartup();   
 
 #endif
