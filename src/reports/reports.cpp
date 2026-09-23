@@ -98,6 +98,10 @@ String buildLog(uint16_t maxEventos) {
    // Depois da ordenação, os maiores IDs estão no final
    uint16_t inicio = total - quantidade;
 
+   // Limite seguro para uma única mensagem no Telegram (4096 caracteres),
+   // com margem para o cabeçalho e para a mensagem de truncamento.
+   constexpr uint32_t LOG_SAFE_LIMIT = 3900;
+
    for (uint16_t i = inicio; i < total; i++) {
 
       Event ev;
@@ -107,45 +111,55 @@ String buildLog(uint16_t maxEventos) {
          continue;
       }
 
-      msg += "\n#";
-      msg += String(ev.id);
-      msg += " ";
+      String evento;
+
+      evento += "\n#";
+      evento += String(ev.id);
+      evento += " ";
 
       if (ev.tipo == EVENT_BOOT) {
-         msg += "Monitor reiniciado";
+         evento += "Monitor reiniciado";
       } else {
          const LinkConfig& cfg = gPerfil->links[ev.link];
-         msg += cfg.nome;
+         evento += cfg.nome;
       }
 
-      msg += "\n";
+      evento += "\n";
 
-      msg += "Motivo : ";
+      evento += "Motivo : ";
 
       if (ev.tipo == EVENT_BOOT) {
-         msg += bootReasonDescription(ev.bootReason);
+         evento += bootReasonDescription(ev.bootReason);
       } else {
-         msg += linkStatusDescription(ev.motivo);
+         evento += linkStatusDescription(ev.motivo);
       }
 
-      msg += "\n";
+      evento += "\n";
 
       if (ev.inicio != 0) {
-         msg += "Inicio      :  ";
-         msg += formatDateTime(ev.inicio, DATETIME_SHORT);
-         msg += "\n";
+         evento += "Inicio      :  ";
+         evento += formatDateTime(ev.inicio, DATETIME_SHORT);
+         evento += "\n";
 
-         msg += "Duracao :  ";
-         msg += formatDuration(ev.duracaoSeg);
-         msg += "\n";
+         evento += "Duracao :  ";
+         evento += formatDuration(ev.duracaoSeg);
+         evento += "\n";
 
       } else {
-         msg += "Em         :  ";
-         msg += formatDateTime(ev.fim, DATETIME_SHORT);
-         msg += "\n";
+         evento += "Em         :  ";
+         evento += formatDateTime(ev.fim, DATETIME_SHORT);
+         evento += "\n";
 
       }
 
+      // O corte ocorre somente entre eventos: se o próximo evento não
+      // couber no limite seguro, ele não é adicionado.
+      if (msg.length() + evento.length() > LOG_SAFE_LIMIT) {
+         msg += "\n… (log truncado - use /log N menor)\n";
+         break;
+      }
+
+      msg += evento;
    }
 
    msg += "\n";
