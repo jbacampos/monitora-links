@@ -296,6 +296,30 @@ bool telegramInit() { return true; }
 // Send Message
 //=============================================================================
 
+// Codifica (percent-encode) um parâmetro para application/x-www-form-urlencoded,
+// escapando &, =, +, %, espaços e demais caracteres reservados.
+static String urlEncode(const String &str) {
+
+   String encoded;
+
+   for (uint16_t i = 0; i < str.length(); i++) {
+      char c = str[i];
+      if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '-' || c == '_' || c == '.' || c == '~') {
+         encoded += c;
+      } else {
+         char buf[4];
+         const char hex[] = "0123456789ABCDEF";
+         buf[0] = '%';
+         buf[1] = hex[(uint8_t)c >> 4];
+         buf[2] = hex[(uint8_t)c & 0x0F];
+         buf[3] = '\0';
+         encoded += buf;
+      }
+   }
+
+   return encoded;
+}
+
 bool telegramSendMessage(const String &text) {
 
    String url = "https://" + String(TELEGRAM_HOST) + "/bot" + gPerfil->telegramConfig->telegramToken + "/sendMessage";
@@ -315,7 +339,7 @@ bool telegramSendMessage(const String &text) {
 
    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-   String body = "chat_id=" + String(gPerfil->telegramConfig->telegramChatId) + "&parse_mode=HTML" + "&text=" + text;
+   String body = "chat_id=" + String(gPerfil->telegramConfig->telegramChatId) + "&parse_mode=HTML" + "&text=" + urlEncode(text);
 
    int code = http.POST(body);
 
