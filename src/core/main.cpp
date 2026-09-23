@@ -101,10 +101,10 @@ void setup() {
 
    gPerfil = detectProfile();
 
-   if (gPerfil == nullptr) {
-      DBG("Local desconhecido.\n");
-      while (true)
-         delay(1000);
+   while (gPerfil == nullptr) {
+      DBG("Local desconhecido. Nova tentativa em 10 s...\n");
+      delay(10000);
+      gPerfil = detectProfile();
    }
 
    bool clockSynced = false;
