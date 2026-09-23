@@ -70,6 +70,13 @@ void initSystem() {
       gRuntime.bootCount++;
       break;
    }
+   // Persiste o motivo DESTE boot para que onBoot() o reporte corretamente.
+   // Não sobrescreve os marcadores gravados por doReboot()/doOta() antes do
+   // restart (esses chegam aqui como ESP_RST_SW e devem ser preservados).
+   if (gRuntime.bootReason != BOOT_AFTER_REBOOT_COMMAND &&
+       gRuntime.bootReason != BOOT_AFTER_OTA) {
+      gRuntime.bootReason = br;
+   }
    gRuntime.saveCount++;
    saveStorage(FILE_RUNTIME, gRuntime);
 }

@@ -33,6 +33,15 @@ const char *bootReasonDescription(BootReason reason) {
    case BOOT_AFTER_OTA:
       return "Atualização OTA";
 
+   case BOOT_WATCHDOG:
+      return "Reset por watchdog";
+
+   case BOOT_SOFTWARE:
+      return "Reiniciado por software";
+
+   case BOOT_UNKNOWN:
+      return "Motivo desconhecido";
+
    default:
       return "Desconhecido";
    }
