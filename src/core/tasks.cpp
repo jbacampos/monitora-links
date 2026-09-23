@@ -21,11 +21,6 @@ static QueueHandle_t telegramMessageQueue = nullptr;
 static QueueHandle_t monitorCommandQueue = nullptr;
 static QueueHandle_t monitorActionQueue = nullptr;
 
-// Contador de tentativas de envio do item que está no topo da fila de
-// mensagens. Só a TelegramTask consome telegramMessageQueue, então este
-// contador não precisa de sincronização.
-static uint8_t telegramMessageAttempts = 0;
-
 static bool discardTelegramMessage(TelegramMessage &reuse);
 
 static void telegramTask(void *parameter);
@@ -192,14 +187,7 @@ static void telegramServiceRound(uint32_t &proximoGetUpdates) {
          DBG("Mensagem retirada da fila do Telegram: %s\n", message.text);
 
          if (!telegramSendMessage(String(message.text))) {
-
-            if (++telegramMessageAttempts < TELEGRAM_MESSAGE_MAX_ATTEMPTS) {
-               DBG("Falha ao enviar. Nova tentativa na proxima rodada (%u/%u)\n",
-                   (unsigned)telegramMessageAttempts, (unsigned)TELEGRAM_MESSAGE_MAX_ATTEMPTS);
-            } else {
-               DBG("Mensagem descartada apos %u tentativas\n", (unsigned)telegramMessageAttempts);
-               discardTelegramMessage(message);
-            }
+            DBG("Falha ao enviar. Mensagem permanece na fila; nova tentativa na proxima rodada\n");
 
             break;      // nao alonga a janela de servico
          }
@@ -497,9 +485,8 @@ bool getTelegramMessage(TelegramMessage &message) {
    if (telegramMessageQueue == nullptr)
       return false;
 
-   // Peek: NÃO remove o item. A remoção só ocorre após o envio confirmado
-   // (ou após esgotar as tentativas), para permitir nova tentativa na
-   // próxima rodada.
+   // Peek: NÃO remove o item. A remoção só ocorre após o envio confirmado,
+   // para permitir nova tentativa na próxima rodada.
    if (xQueuePeek(telegramMessageQueue, &message, 0) != pdPASS)
       return false;
 
@@ -508,18 +495,12 @@ bool getTelegramMessage(TelegramMessage &message) {
    return true;
 }
 
-// Remove a mensagem do topo da fila: usar após envio bem-sucedido ou após
-// esgotar as tentativas de envio.
+// Remove a mensagem do topo da fila: usar após envio bem-sucedido.
 static bool discardTelegramMessage(TelegramMessage &reuse) {
    if (telegramMessageQueue == nullptr)
       return false;
 
-   bool removida = xQueueReceive(telegramMessageQueue, &reuse, 0) == pdPASS;
-
-   if (removida)
-      telegramMessageAttempts = 0;
-
-   return removida;
+   return xQueueReceive(telegramMessageQueue, &reuse, 0) == pdPASS;
 }
 
 
