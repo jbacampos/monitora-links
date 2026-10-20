@@ -124,6 +124,14 @@ typedef struct {
    BootReason bootReason;
    EventType tipo;
    bool enviadoTelegram;
+   // Valor bruto de esp_reset_reason() para eventos EVENT_BOOT. Ocupa o byte
+   // de preenchimento que a struct já possuía no final: não altera
+   // sizeof(Event) nem os offsets dos demais membros.
+   // Em eventos gravados antes desta versão esse byte era padding não
+   // inicializado (na prática, 0). Não há como distinguir com segurança um
+   // evento antigo sem informação de um reset cujo valor bruto seja 0
+   // (ESP_RST_UNKNOWN): ambos aparecem como 0 no histórico.
+   uint8_t resetReasonRaw;
 
 } Event;
 
@@ -139,6 +147,9 @@ typedef struct {
    LinkStatus motivo;
    BootReason bootReason;
    bool pending;
+   // Valor bruto de esp_reset_reason() para NOTIFY_BOOT. Ocupa o byte de
+   // preenchimento final da struct, preservando o layout de RuntimeData.
+   uint8_t resetReasonRaw;
 
 } PendingNotification;
 

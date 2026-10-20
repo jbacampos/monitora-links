@@ -19,7 +19,8 @@
 // #define FW_VERSION "1.2.1"   // Revisado e melhorado pelo Codex
 // #define FW_VERSION "1.2.2"   // Corrige travamento no setup
 // #define FW_VERSION "1.2.3"   // Corrige diversos bugs por IA
-#define FW_VERSION "1.2.4"   // Corrige diversos bugs e realiza uma limpeza
+// #define FW_VERSION "1.2.4"   // Corrige diversos bugs e realiza uma limpeza
+#define FW_VERSION "1.2.5"   // Melhora informação sobre reinícios
 
 
 // Incrementar sempre que mudar algum arquivo de configuração, para forçar a sua recriação:

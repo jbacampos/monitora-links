@@ -100,6 +100,10 @@ static String buildMessage(const PendingNotification &n) {
       msg += bootReasonDescription(n.bootReason);
       msg += "\n";
 
+      msg += "ESP reset reason: ";
+      msg += String(static_cast<unsigned>(n.resetReasonRaw));
+      msg += "\n";
+
       msg += "Evento    :  #";
       msg += String(n.evento);
       msg += "\n";

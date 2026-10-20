@@ -7,6 +7,7 @@
 #include "network/ntp.h"
 #include "config/platform.h"
 #include "core/storage.h"
+#include "core/system.h"
 #include "core/types.h"
 #include <core/tasks.h>
 
@@ -105,11 +106,14 @@ void onBoot() {
 
    BootReason bootReason;
    time_t rebootStartTime;
+   uint8_t resetReasonRaw;
 
    bootReason = gRuntime.bootReason;
    rebootStartTime = gRuntime.rebootStartTime;
+   resetReasonRaw = getResetReasonRaw();
 
    DBG("\nMonitor reiniciado. Motivo: %s\n", bootReasonDescription(bootReason));
+   DBG("ESP reset reason: %u\n", static_cast<unsigned>(resetReasonRaw));
    if ((bootReason == BOOT_AFTER_REBOOT_COMMAND || bootReason == BOOT_AFTER_OTA) && rebootStartTime != 0 && fim != 0) {
       inicio = rebootStartTime;
       duracao = (uint32_t)(fim - inicio);
@@ -126,6 +130,7 @@ void onBoot() {
    ev.id = reserveEventId(false);
    ev.link = LINK_SYSTEM;
    ev.bootReason = bootReason;
+   ev.resetReasonRaw = resetReasonRaw;
    ev.inicio = inicio;
    ev.fim = fim;
    ev.duracaoSeg = duracao;
@@ -137,6 +142,7 @@ void onBoot() {
    n.pending = true;
    n.link = LINK_SYSTEM;
    n.bootReason = bootReason;
+   n.resetReasonRaw = resetReasonRaw;
    n.tipo = NOTIFY_BOOT;
    n.evento = ev.id;
    n.inicio = inicio;

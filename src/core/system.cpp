@@ -2,6 +2,10 @@
 
 #include <Arduino.h>
 
+#ifdef ESP32
+#include <esp_system.h>
+#endif
+
 #include "config/config.h"
 #include "config/platform.h"
 #include "core/storage.h"
@@ -14,6 +18,10 @@
 uint32_t gCycleCount = 0;
 
 void initSystem() {
+   // Captura o motivo do reset antes de qualquer operação que possa reiniciar
+   // o equipamento ou comprometer o diagnóstico.
+   getResetReasonRaw();
+
    WiFi.persistent(false);
 
    WiFi.setAutoReconnect(false);
@@ -85,10 +93,32 @@ void initSystem() {
 // Diagnóstico
 //=============================================================================
 
-BootReason getBootReason() {
+// Valor bruto de esp_reset_reason(), mantido em RAM e lido uma única vez.
+static uint8_t gResetReasonRaw = 0;
+static bool gResetReasonCaptured = false;
 
-   #include <esp_system.h>
-   switch (esp_reset_reason()) {
+static uint8_t readResetReasonRaw() {
+#ifdef ESP32
+   return static_cast<uint8_t>(esp_reset_reason());
+#else
+   // Fora do ESP32 não há motivo equivalente; 0 = ESP_RST_UNKNOWN.
+   return 0;
+#endif
+}
+
+uint8_t getResetReasonRaw() {
+   if (!gResetReasonCaptured) {
+      gResetReasonRaw = readResetReasonRaw();
+      gResetReasonCaptured = true;
+   }
+
+   return gResetReasonRaw;
+}
+
+BootReason getBootReason() {
+#ifdef ESP32
+   // Usa o mesmo valor capturado por getResetReasonRaw().
+   switch (static_cast<esp_reset_reason_t>(getResetReasonRaw())) {
       case ESP_RST_POWERON:
          return BOOT_POWERON;
       case ESP_RST_DEEPSLEEP:
@@ -99,9 +129,14 @@ BootReason getBootReason() {
          return BOOT_WATCHDOG;
       case ESP_RST_SW:
          return BOOT_SOFTWARE;
+      // O enum BootReason atual não tem classificação específica para
+      // brownout ou panic; o valor bruto, exibido no histórico, os distingue.
+      case ESP_RST_BROWNOUT:
+      case ESP_RST_PANIC:
       default:
          return BOOT_UNKNOWN;
    }
-
-
+#else
+   return BOOT_UNKNOWN;
+#endif
 }

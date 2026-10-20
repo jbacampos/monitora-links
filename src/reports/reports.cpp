@@ -130,6 +130,8 @@ String buildLog(uint16_t maxEventos) {
 
       if (ev.tipo == EVENT_BOOT) {
          evento += bootReasonDescription(ev.bootReason);
+         evento += "\nESP reset reason: ";
+         evento += String(static_cast<unsigned>(ev.resetReasonRaw));
       } else {
          evento += linkStatusDescription(ev.motivo);
       }
