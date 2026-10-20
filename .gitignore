@@ -5,6 +5,7 @@
 
 # Arquivos compactados
 *.zip
+*.txt
 
 # Arquivo com dados privados
 secrets.h
